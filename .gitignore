@@ -5,8 +5,6 @@ __pycache__/
 .mypy_cache/
 .DS_Store
 mlruns/
-*.joblib
-*.pkl
 .ipynb_checkpoints/
 .env
 data/processed/

@@ -1,7 +1,5 @@
 """
-DiaRisk — train LightGBM classifier.
-
-Same train/test split as logistic regression (seed=42) so metrics are comparable.
+DiaRisk — train LightGBM and save the pipeline for inference.
 
 Run:
   python src/train_lightgbm.py
@@ -22,10 +20,10 @@ from evaluate import (
     print_metrics,
     save_metrics,
 )
+from model_io import save_model
 
 
 def build_pipeline() -> Pipeline:
-    # Trees don't need scaling; median impute keeps preprocessing consistent.
     return Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="median")),
@@ -68,8 +66,10 @@ def main() -> None:
     )
     print_metrics(metrics, y_test, y_pred)
 
-    path = save_metrics(metrics, "metrics_lightgbm.json")
-    print(f"Saved metrics → {path}")
+    metrics_path = save_metrics(metrics, "metrics_lightgbm.json")
+    model_path = save_model(pipe)
+    print(f"Saved metrics → {metrics_path}")
+    print(f"Saved model   → {model_path}")
 
 
 if __name__ == "__main__":

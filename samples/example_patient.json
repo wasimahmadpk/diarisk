@@ -1,0 +1,10 @@
+{
+  "pregnancies": 2,
+  "glucose": 140,
+  "blood_pressure": 72,
+  "skin_thickness": 35,
+  "insulin": 110,
+  "bmi": 32.5,
+  "diabetes_pedigree": 0.55,
+  "age": 45
+}

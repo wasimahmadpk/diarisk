@@ -10,7 +10,7 @@ Data: [Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) (
 - [x] data + EDA notebook
 - [x] logistic regression baseline
 - [x] LightGBM + comparison
-- [ ] model export / JSON inference
+- [x] model export / JSON inference
 - [ ] FastAPI
 - [ ] MLflow
 - [ ] tests
@@ -64,6 +64,23 @@ python src/compare_models.py
 ```
 
 - Logistic: impute → scale → logistic regression → `artifacts/metrics_logistic.json`
-- LightGBM: impute → LightGBM → `artifacts/metrics_lightgbm.json`
+- LightGBM: impute → LightGBM → `artifacts/metrics_lightgbm.json` + `models/diarisk_lightgbm.joblib`
 
 On macOS, LightGBM needs OpenMP: `brew install libomp`
+
+## Predict
+
+```bash
+python src/train_lightgbm.py   # once, saves the model
+python src/predict.py --json samples/example_patient.json
+```
+
+Example output:
+
+```json
+{
+  "diabetes_prediction": 1,
+  "diabetes_probability": 0.72,
+  "risk_level": "high"
+}
+```
