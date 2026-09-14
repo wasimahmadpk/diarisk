@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+mlruns/
+*.joblib
+*.pkl
+.ipynb_checkpoints/
+.env
+data/processed/
+!data/processed/.gitkeep
