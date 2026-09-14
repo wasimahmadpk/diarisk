@@ -15,7 +15,7 @@ Data: [Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) (
 - [x] MLflow
 - [x] tests
 - [x] Docker + CI
-- [ ] cloud deploy
+- [ ] cloud deploy (AWS App Runner, config ready)
 
 ## Setup
 
@@ -135,3 +135,22 @@ GitHub Actions (`.github/workflows/ci.yml`) on every push/PR to `main`:
 1. install deps + `pytest`
 2. build Docker image
 3. on push to `main`, push image to `ghcr.io/wasimahmadpk/diarisk`
+4. on push to `main`, build + push to ECR and roll out on App Runner
+   (only when the repository variable `AWS_DEPLOY` is `true`)
+
+## Cloud deploy (AWS)
+
+The API is deployed as a container on AWS App Runner: ECR stores the image,
+App Runner pulls it and serves it behind a managed HTTPS endpoint with
+autoscaling. Infrastructure lives in `terraform-aws/`.
+
+```bash
+cd terraform-aws
+terraform init
+terraform apply -target=aws_ecr_repository.diarisk   # registry first
+# build + push the image, then
+terraform apply
+terraform output service_url
+```
+
+Full walkthrough incl. GitHub OIDC and costs: [docs/AWS_SETUP.md](docs/AWS_SETUP.md)

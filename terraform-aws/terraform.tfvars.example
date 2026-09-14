@@ -1,0 +1,6 @@
+aws_region        = "eu-central-1"
+service_name      = "diarisk-api"
+github_repository = "wasimahmadpk/diarisk"
+
+# Set to false if the AWS account already has a GitHub OIDC provider.
+create_github_oidc_provider = true
