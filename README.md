@@ -15,7 +15,7 @@ Data: [Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) (
 - [x] MLflow
 - [x] tests
 - [x] Docker + CI
-- [ ] cloud deploy (AWS App Runner, config ready)
+- [ ] cloud deploy (AWS Lambda, config ready)
 
 ## Setup
 
@@ -128,6 +128,9 @@ docker run --rm -p 8000:8000 diarisk
 
 Then: http://localhost:8000/docs
 
+The image installs `requirements-api.txt` only (no notebooks, plotting or
+MLflow). `Dockerfile.lambda` packages the same app for AWS Lambda.
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) on every push/PR to `main`:
@@ -135,22 +138,22 @@ GitHub Actions (`.github/workflows/ci.yml`) on every push/PR to `main`:
 1. install deps + `pytest`
 2. build Docker image
 3. on push to `main`, push image to `ghcr.io/wasimahmadpk/diarisk`
-4. on push to `main`, build + push to ECR and roll out on App Runner
+4. on push to `main`, build + push to ECR and update the Lambda function
    (only when the repository variable `AWS_DEPLOY` is `true`)
 
 ## Cloud deploy (AWS)
 
-The API is deployed as a container on AWS App Runner: ECR stores the image,
-App Runner pulls it and serves it behind a managed HTTPS endpoint with
-autoscaling. Infrastructure lives in `terraform-aws/`.
+The API runs as a container on AWS Lambda behind a Function URL, so it scales
+to zero and costs nothing while idle. `src/lambda_handler.py` adapts the same
+FastAPI app via Mangum. Infrastructure lives in `terraform-aws/`.
 
 ```bash
 cd terraform-aws
 terraform init
 terraform apply -target=aws_ecr_repository.diarisk   # registry first
-# build + push the image, then
+# build + push the image (docker build -f Dockerfile.lambda ...), then
 terraform apply
-terraform output service_url
+terraform output function_url
 ```
 
 Full walkthrough incl. GitHub OIDC and costs: [docs/AWS_SETUP.md](docs/AWS_SETUP.md)

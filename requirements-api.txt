@@ -1,0 +1,10 @@
+# Runtime dependencies of the served API (kept separate so the deployment
+# image stays small: no notebooks, plotting or MLflow).
+numpy==2.0.1
+pandas==2.2.2
+scikit-learn==1.5.1
+lightgbm==4.7.0
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+mangum==0.19.0

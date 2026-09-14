@@ -7,15 +7,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+# Runtime deps only - no notebooks, plotting or MLflow in the served image.
+COPY requirements-api.txt .
 RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir -r requirements-api.txt
 
 COPY src/ src/
 COPY models/ models/
 COPY samples/ samples/
-COPY data/raw/ data/raw/
-COPY pytest.ini .
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src

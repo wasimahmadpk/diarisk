@@ -3,14 +3,14 @@ output "ecr_repository_url" {
   value       = aws_ecr_repository.diarisk.repository_url
 }
 
-output "service_url" {
+output "function_url" {
   description = "Public HTTPS endpoint of the API."
-  value       = "https://${aws_apprunner_service.diarisk.service_url}"
+  value       = aws_lambda_function_url.diarisk.function_url
 }
 
-output "service_arn" {
-  description = "App Runner service ARN (used by the deploy workflow)."
-  value       = aws_apprunner_service.diarisk.arn
+output "function_name" {
+  description = "Lambda function name (used by the deploy workflow)."
+  value       = aws_lambda_function.diarisk.function_name
 }
 
 output "github_actions_role_arn" {

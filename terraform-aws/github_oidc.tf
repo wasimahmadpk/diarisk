@@ -43,7 +43,7 @@ data "aws_iam_policy_document" "github_actions_assume" {
 }
 
 resource "aws_iam_role" "github_actions" {
-  name               = "${var.service_name}-github-actions"
+  name               = "${var.function_name}-github-actions"
   assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
 }
 
@@ -69,18 +69,18 @@ data "aws_iam_policy_document" "github_actions" {
   }
 
   statement {
-    sid = "AppRunnerDeploy"
+    sid = "LambdaDeploy"
     actions = [
-      "apprunner:StartDeployment",
-      "apprunner:DescribeService",
-      "apprunner:ListServices",
+      "lambda:UpdateFunctionCode",
+      "lambda:GetFunction",
+      "lambda:GetFunctionUrlConfig",
     ]
-    resources = ["*"]
+    resources = [aws_lambda_function.diarisk.arn]
   }
 }
 
 resource "aws_iam_role_policy" "github_actions" {
-  name   = "${var.service_name}-deploy"
+  name   = "${var.function_name}-deploy"
   role   = aws_iam_role.github_actions.id
   policy = data.aws_iam_policy_document.github_actions.json
 }

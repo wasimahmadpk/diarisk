@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 from api import app
@@ -37,3 +39,22 @@ def test_predict_rejects_missing_field(sample_patient):
     with TestClient(app) as client:
         r = client.post("/predict", json=payload)
         assert r.status_code == 422
+
+
+def test_lambda_handler_serves_health():
+    """The Lambda entrypoint must handle a Function URL event."""
+    from lambda_handler import handler
+
+    event = {
+        "version": "2.0",
+        "rawPath": "/health",
+        "rawQueryString": "",
+        "headers": {"host": "localhost"},
+        "requestContext": {
+            "http": {"method": "GET", "path": "/health", "sourceIp": "127.0.0.1"}
+        },
+        "isBase64Encoded": False,
+    }
+    response = handler(event, None)
+    assert response["statusCode"] == 200
+    assert json.loads(response["body"])["status"] == "ok"

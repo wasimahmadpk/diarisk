@@ -69,7 +69,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    name: Deploy to AWS App Runner
+    name: Deploy to AWS Lambda
     runs-on: ubuntu-latest
     needs: test
     # Enable by setting the repository variable AWS_DEPLOY to "true"
@@ -98,6 +98,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: Dockerfile.lambda
           push: true
           platforms: linux/amd64
           tags: |
@@ -106,23 +107,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # App Runner has auto-deployments enabled, so pushing :latest already
-      # starts a rollout. Here we only wait for it and report the URL.
-      - name: Wait for rollout
+      - name: Deploy to Lambda
         env:
-          SERVICE_ARN: ${{ vars.APPRUNNER_SERVICE_ARN }}
+          FUNCTION_NAME: ${{ vars.LAMBDA_FUNCTION_NAME }}
+          IMAGE_URI: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
         run: |
-          for _ in $(seq 1 60); do
-            status=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" \
-              --query 'Service.Status' --output text)
-            echo "status: $status"
-            case "$status" in
-              RUNNING) break ;;
-              CREATE_FAILED|DELETED|PAUSED) echo "unexpected status"; exit 1 ;;
-            esac
-            sleep 15
-          done
-          url=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" \
-            --query 'Service.ServiceUrl' --output text)
-          echo "https://$url" >> "$GITHUB_STEP_SUMMARY"
-          curl -fsS "https://$url/health"
+          aws lambda update-function-code \
+            --function-name "$FUNCTION_NAME" \
+            --image-uri "$IMAGE_URI" > /dev/null
+          aws lambda wait function-updated --function-name "$FUNCTION_NAME"
+
+          url=$(aws lambda get-function-url-config \
+            --function-name "$FUNCTION_NAME" \
+            --query FunctionUrl --output text)
+          echo "${url%/}" >> "$GITHUB_STEP_SUMMARY"
+          curl -fsS --retry 3 --retry-delay 5 "${url%/}/health"

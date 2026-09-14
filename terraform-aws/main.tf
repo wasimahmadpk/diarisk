@@ -1,6 +1,8 @@
-# DiaRisk on AWS App Runner:
-# ECR holds the image, App Runner pulls it and serves it behind a managed
-# HTTPS endpoint with autoscaling. No VPC, load balancer or cluster needed.
+# DiaRisk on AWS Lambda:
+# ECR holds the container image, Lambda runs it, a Function URL exposes it
+# over HTTPS. Lambda scales to zero, so an idle service costs nothing and
+# normal usage stays inside the always-free tier (1M requests + 400k GB-s
+# per month).
 
 resource "aws_ecr_repository" "diarisk" {
   name                 = var.ecr_repository_name
@@ -12,96 +14,108 @@ resource "aws_ecr_repository" "diarisk" {
   }
 }
 
+# ECR storage is the one thing that is not free forever (500 MB for the first
+# 12 months), so keep only a few images around.
 resource "aws_ecr_lifecycle_policy" "diarisk" {
   repository = aws_ecr_repository.diarisk.name
 
   policy = jsonencode({
     rules = [{
       rulePriority = 1
-      description  = "Keep the 10 most recent images"
+      description  = "Keep the ${var.ecr_keep_images} most recent images"
       selection = {
         tagStatus   = "any"
         countType   = "imageCountMoreThanNumber"
-        countNumber = 10
+        countNumber = var.ecr_keep_images
       }
       action = { type = "expire" }
     }]
   })
 }
 
-# App Runner assumes this role to pull from ECR.
-data "aws_iam_policy_document" "apprunner_ecr_assume" {
+data "aws_iam_policy_document" "lambda_assume" {
   statement {
     actions = ["sts:AssumeRole"]
 
     principals {
       type        = "Service"
-      identifiers = ["build.apprunner.amazonaws.com"]
+      identifiers = ["lambda.amazonaws.com"]
     }
   }
 }
 
-resource "aws_iam_role" "apprunner_ecr_access" {
-  name               = "${var.service_name}-ecr-access"
-  assume_role_policy = data.aws_iam_policy_document.apprunner_ecr_assume.json
+resource "aws_iam_role" "lambda" {
+  name               = "${var.function_name}-role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
 }
 
-resource "aws_iam_role_policy_attachment" "apprunner_ecr_access" {
-  role       = aws_iam_role.apprunner_ecr_access.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
+resource "aws_iam_role_policy_attachment" "lambda_logs" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-resource "aws_apprunner_auto_scaling_configuration_version" "diarisk" {
-  auto_scaling_configuration_name = var.service_name
-  min_size                        = var.min_size
-  max_size                        = var.max_size
-  max_concurrency                 = var.max_concurrency
+# Created explicitly so logs expire instead of accumulating forever.
+resource "aws_cloudwatch_log_group" "lambda" {
+  name              = "/aws/lambda/${var.function_name}"
+  retention_in_days = var.log_retention_days
+}
+
+resource "aws_lambda_function" "diarisk" {
+  function_name = var.function_name
+  role          = aws_iam_role.lambda.arn
+  package_type  = "Image"
+  image_uri     = "${aws_ecr_repository.diarisk.repository_url}:${var.image_tag}"
+  architectures = ["x86_64"]
+
+  memory_size = var.memory_size
+  timeout     = var.timeout_seconds
+
+  # Hard cap so a runaway loop or traffic spike cannot blow past the free tier.
+  reserved_concurrent_executions = var.reserved_concurrency
+
+  environment {
+    variables = {
+      DIARISK_MODEL_PATH = "/var/task/models/diarisk_lightgbm.joblib"
+    }
+  }
 
   lifecycle {
-    create_before_destroy = true
+    # CI deploys new images; Terraform should not roll them back.
+    ignore_changes = [image_uri]
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_logs,
+    aws_cloudwatch_log_group.lambda,
+  ]
+}
+
+resource "aws_lambda_function_url" "diarisk" {
+  function_name      = aws_lambda_function.diarisk.function_name
+  authorization_type = "NONE"
+
+  cors {
+    allow_origins = ["*"]
+    allow_methods = ["*"]
+    allow_headers = ["*"]
   }
 }
 
-resource "aws_apprunner_service" "diarisk" {
-  service_name = var.service_name
+# Optional safety net: mail as soon as the account is forecast to cost money.
+resource "aws_budgets_budget" "diarisk" {
+  count = var.budget_alert_email == "" ? 0 : 1
 
-  source_configuration {
-    # New pushes to the tracked tag redeploy the service automatically.
-    auto_deployments_enabled = true
+  name         = "${var.function_name}-monthly"
+  budget_type  = "COST"
+  limit_amount = var.budget_limit_usd
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
 
-    authentication_configuration {
-      access_role_arn = aws_iam_role.apprunner_ecr_access.arn
-    }
-
-    image_repository {
-      image_identifier      = "${aws_ecr_repository.diarisk.repository_url}:${var.image_tag}"
-      image_repository_type = "ECR"
-
-      image_configuration {
-        port = tostring(var.container_port)
-
-        runtime_environment_variables = {
-          PYTHONUNBUFFERED = "1"
-        }
-      }
-    }
+  notification {
+    comparison_operator        = "GREATER_THAN"
+    threshold                  = 80
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "FORECASTED"
+    subscriber_email_addresses = [var.budget_alert_email]
   }
-
-  instance_configuration {
-    cpu    = var.cpu
-    memory = var.memory
-  }
-
-  health_check_configuration {
-    protocol            = "HTTP"
-    path                = "/health"
-    interval            = 10
-    timeout             = 5
-    healthy_threshold   = 1
-    unhealthy_threshold = 5
-  }
-
-  auto_scaling_configuration_arn = aws_apprunner_auto_scaling_configuration_version.diarisk.arn
-
-  depends_on = [aws_iam_role_policy_attachment.apprunner_ecr_access]
 }

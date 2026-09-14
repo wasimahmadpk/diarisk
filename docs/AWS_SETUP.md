@@ -1,14 +1,21 @@
-# Deploying DiaRisk to AWS App Runner
+# Deploying DiaRisk to AWS Lambda
 
-The API runs as a container on [AWS App Runner](https://aws.amazon.com/apprunner/):
-you hand it an image, it gives you an HTTPS endpoint and scales it. No VPC,
-load balancer or cluster to manage.
+The API runs as a container on AWS Lambda behind a
+[Function URL](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html).
+Lambda scales to zero: when nobody calls the API, nothing runs and nothing is
+billed.
 
 ```
-docker image ──push──> ECR ──pull──> App Runner ──> https://<id>.<region>.awsapprunner.com
+docker image ──push──> ECR ──> Lambda (container) ──> https://<id>.lambda-url.<region>.on.aws
 ```
 
-Everything is described in `terraform-aws/`.
+`src/lambda_handler.py` wraps the same FastAPI app with
+[Mangum](https://github.com/Kludex/mangum), so local `uvicorn` and Lambda serve
+identical code. Infrastructure lives in `terraform-aws/`.
+
+> Why not App Runner or ECS? Both keep at least one container running and bill
+> memory around the clock (~$10/month idle). Lambda is the only AWS option that
+> is genuinely free while unused.
 
 ## 1. Tools
 
@@ -19,10 +26,7 @@ aws --version
 terraform -version
 ```
 
-## 2. AWS account
-
-Create an account at https://aws.amazon.com, then an IAM user with
-programmatic access (or use IAM Identity Center) and configure the CLI:
+## 2. AWS credentials
 
 ```bash
 aws configure
@@ -30,24 +34,21 @@ aws configure
 aws sts get-caller-identity   # should print your account id
 ```
 
-Free tier note: App Runner is **not** free. See [costs](#costs) below.
-
 ## 3. Create the ECR repository first
 
-App Runner refuses to start if the image does not exist yet, so create the
-registry before the service:
+Lambda cannot be created before its image exists, so build the registry first:
 
 ```bash
 cd terraform-aws
-cp terraform.tfvars.example terraform.tfvars   # adjust if you like
+cp terraform.tfvars.example terraform.tfvars
+# optional but recommended: set budget_alert_email
 terraform init
 terraform apply -target=aws_ecr_repository.diarisk
 ```
 
 ## 4. Build and push the image
 
-App Runner runs on x86_64, so on an Apple Silicon Mac you must build for
-`linux/amd64`:
+Lambda runs on x86_64, so on an Apple Silicon Mac build for `linux/amd64`:
 
 ```bash
 cd ..
@@ -58,97 +59,76 @@ REGISTRY=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 aws ecr get-login-password --region $AWS_REGION \
   | docker login --username AWS --password-stdin $REGISTRY
 
-docker build --platform linux/amd64 -t $REGISTRY/diarisk:latest .
+docker build --platform linux/amd64 -f Dockerfile.lambda -t $REGISTRY/diarisk:latest .
 docker push $REGISTRY/diarisk:latest
 ```
 
-## 5. Create the service
+## 5. Create the function
 
 ```bash
 cd terraform-aws
 terraform apply
 ```
 
-This creates the App Runner service, its autoscaling configuration, the IAM
-role App Runner uses to pull from ECR, and the role GitHub Actions assumes
-later. Takes a few minutes.
+This creates the Lambda function, its Function URL, the execution role, a log
+group with 7-day retention and the role GitHub Actions uses to deploy.
 
 ```bash
-terraform output service_url
+URL=$(terraform output -raw function_url)
+curl -s ${URL%/}/health
+curl -s ${URL%/}/predict -H 'Content-Type: application/json' -d @../samples/example_patient.json
+open ${URL%/}/docs
 ```
 
-Check it:
-
-```bash
-URL=$(terraform output -raw service_url)
-curl -s $URL/health
-curl -s $URL/predict -H 'Content-Type: application/json' -d @../samples/example_patient.json
-open $URL/docs
-```
+The first call after a while is a cold start and takes a few seconds (the
+image has to be loaded and the model unpickled); afterwards responses are fast
+while the function stays warm.
 
 ## 6. Automatic deploys from GitHub Actions
 
-The `deploy` job in `.github/workflows/ci.yml` builds the image, pushes it to
-ECR and waits for the rollout. It authenticates via OIDC — no access keys in
-GitHub.
-
-```bash
-terraform output github_actions_role_arn
-terraform output service_arn
-```
-
-Then, in the repository settings:
-
-| kind     | name                    | value                             |
-|----------|-------------------------|-----------------------------------|
-| secret   | `AWS_DEPLOY_ROLE_ARN`   | `github_actions_role_arn` output  |
-| variable | `AWS_REGION`            | `eu-central-1`                    |
-| variable | `ECR_REPOSITORY`        | `diarisk`                         |
-| variable | `APPRUNNER_SERVICE_ARN` | `service_arn` output              |
-| variable | `AWS_DEPLOY`            | `true`                            |
-
-Or from the CLI:
+The `deploy` job in `.github/workflows/ci.yml` builds `Dockerfile.lambda`,
+pushes it to ECR and points the function at the new image. It authenticates
+via OIDC — no AWS keys stored in GitHub.
 
 ```bash
 gh secret set AWS_DEPLOY_ROLE_ARN --body "$(terraform output -raw github_actions_role_arn)"
 gh variable set AWS_REGION --body "eu-central-1"
 gh variable set ECR_REPOSITORY --body "diarisk"
-gh variable set APPRUNNER_SERVICE_ARN --body "$(terraform output -raw service_arn)"
+gh variable set LAMBDA_FUNCTION_NAME --body "$(terraform output -raw function_name)"
 gh variable set AWS_DEPLOY --body "true"
 ```
 
 Without `AWS_DEPLOY=true` the deploy job is skipped, so the pipeline keeps
 working for anyone without AWS access.
 
-Because the service has `auto_deployments_enabled`, a new `:latest` in ECR is
-picked up by App Runner on its own; the workflow only waits and pings
-`/health`.
-
-## Configuration
-
-Defaults live in `terraform-aws/variables.tf`:
-
-| variable          | default | meaning                                   |
-|-------------------|---------|-------------------------------------------|
-| `cpu` / `memory`  | 1 vCPU / 2 GB | per instance                        |
-| `min_size`        | 1       | App Runner cannot scale to zero           |
-| `max_size`        | 3       | upper scaling limit                       |
-| `max_concurrency` | 80      | requests per instance before scaling out  |
+Terraform ignores changes to `image_uri`, so a later `terraform apply` will not
+roll back what CI deployed.
 
 ## Costs
 
-Unlike Cloud Run, App Runner keeps at least one instance warm and bills
-memory continuously (~$0.007/GB-h, i.e. roughly $10/month for 2 GB idle);
-vCPU is only billed while requests are processed.
+| resource | free tier | after that |
+|----------|-----------|------------|
+| Lambda requests | 1M / month, permanent | $0.20 per 1M |
+| Lambda compute | 400,000 GB-s / month, permanent | $0.0000166667 per GB-s |
+| Function URL | included | – |
+| CloudWatch Logs | 5 GB ingest / month | $0.50 per GB |
+| ECR storage | 500 MB / month for 12 months | $0.10 per GB-month |
 
-Pause the service when you are not using it:
+At 1024 MB a request of ~1 s uses 1 GB-s, so the free tier covers roughly
+400,000 calls per month. Idle cost is zero.
 
-```bash
-aws apprunner pause-service --service-arn $(terraform output -raw service_arn)
-aws apprunner resume-service --service-arn $(terraform output -raw service_arn)
-```
+The only thing that can eventually cost a little is ECR storage: the image is
+around 500 MB, so expect a few cents per month once the 12-month window ends.
+The lifecycle policy keeps just the last 3 images.
 
-Or remove everything:
+Guardrails already in the config:
+
+- `reserved_concurrency = 5` caps parallel executions, so even a traffic flood
+  cannot run up a large bill.
+- `log_retention_days = 7` stops logs from piling up.
+- `budget_alert_email` sends a mail as soon as the forecast exceeds $1/month.
+
+Remove everything:
 
 ```bash
 terraform destroy
@@ -156,9 +136,12 @@ terraform destroy
 
 ## Troubleshooting
 
-- **Service stuck in `CREATE_FAILED`** — usually the image is missing or built
-  for arm64. Rebuild with `--platform linux/amd64` and push again.
-- **Health check failing** — App Runner probes `/health` on port 8000; check
-  the application logs in CloudWatch under `/aws/apprunner/diarisk-api`.
+- **`Runtime.InvalidEntrypoint` / image errors** — the image was built for
+  arm64. Rebuild with `--platform linux/amd64`.
+- **`FileNotFoundError` for the model** — `models/diarisk_lightgbm.joblib` must
+  exist before the build; run `python src/train_lightgbm.py`.
+- **Timeouts on the first call** — cold start; raise `timeout_seconds` or call
+  `/health` once to warm the function.
+- **Logs** — `aws logs tail /aws/lambda/diarisk-api --follow`.
 - **OIDC provider already exists** — set `create_github_oidc_provider = false`
-  in `terraform.tfvars`; the config then looks the existing one up.
+  in `terraform.tfvars`.

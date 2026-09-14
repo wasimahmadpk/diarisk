@@ -1,63 +1,69 @@
 variable "aws_region" {
-  description = "AWS region for ECR and App Runner."
+  description = "AWS region for ECR and Lambda."
   type        = string
   default     = "eu-central-1"
 }
 
-variable "service_name" {
-  description = "App Runner service name."
+variable "function_name" {
+  description = "Lambda function name."
   type        = string
   default     = "diarisk-api"
 }
 
 variable "ecr_repository_name" {
-  description = "ECR repository holding the DiaRisk API image."
+  description = "ECR repository holding the DiaRisk image."
   type        = string
   default     = "diarisk"
 }
 
 variable "image_tag" {
-  description = "Image tag App Runner runs."
+  description = "Image tag used when the function is first created."
   type        = string
   default     = "latest"
 }
 
-variable "container_port" {
-  description = "Port uvicorn listens on inside the container."
-  type        = number
-  default     = 8000
-}
-
-# 1 vCPU / 2 GB is enough for a LightGBM pipeline; App Runner bills
-# vCPU only while requests are being handled, memory continuously.
-variable "cpu" {
-  description = "vCPU units per instance (1024 = 1 vCPU)."
-  type        = string
-  default     = "1024"
-}
-
-variable "memory" {
-  description = "Memory per instance in MB."
-  type        = string
-  default     = "2048"
-}
-
-variable "min_size" {
-  description = "Minimum number of instances. App Runner cannot scale to zero."
-  type        = number
-  default     = 1
-}
-
-variable "max_size" {
-  description = "Maximum number of instances."
+variable "ecr_keep_images" {
+  description = "How many images to keep in ECR (storage is only free up to 500 MB)."
   type        = number
   default     = 3
 }
 
-variable "max_concurrency" {
-  description = "Requests per instance before scaling out."
+# 1024 MB is a good tradeoff: Lambda scales CPU with memory, so a bigger
+# function finishes faster and often costs the same in GB-seconds.
+variable "memory_size" {
+  description = "Lambda memory in MB."
   type        = number
-  default     = 80
+  default     = 1024
+}
+
+variable "timeout_seconds" {
+  description = "Lambda timeout. Cold starts of this image take a few seconds."
+  type        = number
+  default     = 30
+}
+
+variable "reserved_concurrency" {
+  description = "Maximum parallel executions. Keeps runaway traffic inside the free tier."
+  type        = number
+  default     = 5
+}
+
+variable "log_retention_days" {
+  description = "CloudWatch log retention."
+  type        = number
+  default     = 7
+}
+
+variable "budget_alert_email" {
+  description = "Email for the monthly budget alert. Empty disables the budget."
+  type        = string
+  default     = ""
+}
+
+variable "budget_limit_usd" {
+  description = "Monthly budget that triggers the alert."
+  type        = string
+  default     = "1"
 }
 
 variable "github_repository" {
