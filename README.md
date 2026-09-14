@@ -12,7 +12,7 @@ Data: [Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) (
 - [x] LightGBM + comparison
 - [x] model export / JSON inference
 - [x] FastAPI
-- [ ] MLflow
+- [x] MLflow
 - [ ] tests
 - [ ] Docker + CI
 - [ ] cloud deploy
@@ -99,3 +99,16 @@ curl -s http://localhost:8000/predict \
   -H 'Content-Type: application/json' \
   -d @samples/example_patient.json
 ```
+
+## MLflow
+
+Training logs params + metrics (+ model artifact) under experiment `diarisk`.
+
+```bash
+python src/train_logistic.py
+python src/train_lightgbm.py
+mlflow ui --backend-store-uri ./mlruns --port 5001
+```
+
+Open http://127.0.0.1:5001 and compare the two runs.
+(On macOS, port 5000 is often taken by AirPlay.)

@@ -21,6 +21,16 @@ from evaluate import (
     save_metrics,
 )
 from model_io import save_model
+from tracking import log_training_run
+
+LGBM_PARAMS = {
+    "n_estimators": 200,
+    "learning_rate": 0.05,
+    "max_depth": 4,
+    "num_leaves": 15,
+    "subsample": 0.9,
+    "colsample_bytree": 0.9,
+}
 
 
 def build_pipeline() -> Pipeline:
@@ -30,12 +40,7 @@ def build_pipeline() -> Pipeline:
             (
                 "model",
                 LGBMClassifier(
-                    n_estimators=200,
-                    learning_rate=0.05,
-                    max_depth=4,
-                    num_leaves=15,
-                    subsample=0.9,
-                    colsample_bytree=0.9,
+                    **LGBM_PARAMS,
                     random_state=RANDOM_STATE,
                     verbose=-1,
                 ),
@@ -68,8 +73,22 @@ def main() -> None:
 
     metrics_path = save_metrics(metrics, "metrics_lightgbm.json")
     model_path = save_model(pipe)
+    run_id = log_training_run(
+        run_name="lightgbm",
+        params={
+            "model_type": "lightgbm",
+            "imputer": "median",
+            "test_size": TEST_SIZE,
+            "random_state": RANDOM_STATE,
+            **LGBM_PARAMS,
+        },
+        metrics=metrics,
+        model=pipe,
+        X_example=X_test.head(5),
+    )
     print(f"Saved metrics → {metrics_path}")
     print(f"Saved model   → {model_path}")
+    print(f"MLflow run_id → {run_id}")
 
 
 if __name__ == "__main__":

@@ -21,6 +21,7 @@ from evaluate import (
     print_metrics,
     save_metrics,
 )
+from tracking import log_training_run
 
 
 def build_pipeline() -> Pipeline:
@@ -59,7 +60,22 @@ def main() -> None:
     print_metrics(metrics, y_test, y_pred)
 
     path = save_metrics(metrics, "metrics_logistic.json")
+    run_id = log_training_run(
+        run_name="logistic_regression",
+        params={
+            "model_type": "logistic_regression",
+            "max_iter": 1000,
+            "scaler": "StandardScaler",
+            "imputer": "median",
+            "test_size": TEST_SIZE,
+            "random_state": RANDOM_STATE,
+        },
+        metrics=metrics,
+        model=pipe,
+        X_example=X_test.head(5),
+    )
     print(f"Saved metrics → {path}")
+    print(f"MLflow run_id → {run_id}")
 
 
 if __name__ == "__main__":
