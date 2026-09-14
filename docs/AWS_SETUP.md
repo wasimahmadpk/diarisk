@@ -59,6 +59,23 @@ docker build --platform linux/amd64 -f Dockerfile.lambda -t $REGISTRY/diarisk:la
 docker push $REGISTRY/diarisk:latest
 ```
 
+### Test the image locally first
+
+The AWS base image ships with the Runtime Interface Emulator, so you can invoke
+the container exactly like Lambda will, without deploying:
+
+```bash
+docker run -d --name diarisk-rie -p 9000:8080 $REGISTRY/diarisk:latest
+
+curl -s -XPOST http://localhost:9000/2015-03-31/functions/function/invocations \
+  -d '{"version":"2.0","rawPath":"/health","rawQueryString":"",
+       "headers":{"host":"localhost"},
+       "requestContext":{"http":{"method":"GET","path":"/health","sourceIp":"127.0.0.1"}},
+       "isBase64Encoded":false}'
+
+docker rm -f diarisk-rie
+```
+
 ## 5. Create the function
 
 ```bash
@@ -114,9 +131,10 @@ At 1024 MB a request of ~1 s uses 1 GB-s, so the free tier covers roughly
 400,000 calls per month. Idle cost is zero.
 
 The only thing that can eventually cost a little is ECR storage. The image is
-roughly 400 MB compressed, which still fits the free 500 MB; layers are shared
-between tags, so keeping the last 3 images (lifecycle policy) barely adds to
-that. After the 12-month window expect a few cents per month.
+1.3 GB unpacked but ~300 MB compressed, which is what ECR bills, so it fits the
+free 500 MB; layers are shared between tags, so keeping the last 3 images
+(lifecycle policy) barely adds to that. After the 12-month window expect a few
+cents per month.
 
 Guardrails already in the config:
 
