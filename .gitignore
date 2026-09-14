@@ -11,3 +11,5 @@ mlruns/
 .env
 data/processed/
 !data/processed/.gitkeep
+artifacts/
+!artifacts/.gitkeep

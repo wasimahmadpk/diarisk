@@ -1,20 +1,23 @@
 # DiaRisk
 
-Educational MLOps project: **diabetes risk prediction** from simple health features  
-(Pima Indians Diabetes dataset).
+**Diabetes risk prediction** from clinical health features, using the  
+[Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) dataset  
+(UCI Machine Learning Repository — established, widely used benchmark data).
 
-> **Disclaimer:** Demo only — not medical advice. Not for clinical use.
+Predict diabetes likelihood from glucose, BMI, age, blood pressure, and related measurements.  
+Built with a modern MLOps stack: training → evaluation → API → tracking → CI/CD → cloud.
 
 ---
 
-## Learning path (Schritt für Schritt)
+## Project roadmap
 
 | Step | What we do | Status |
 |------|------------|--------|
-| **1** | Project + download & understand data | ✅ current |
-| **2** | Train a first model | next |
-| **3** | Evaluate (accuracy is not enough) | pending |
-| **4** | Save model + predict from JSON | pending |
+| **1** | Project setup & data analysis | ✅ done |
+| **2a** | Train Logistic Regression baseline | ✅ current |
+| **2b** | Train LightGBM and compare | next |
+| **3** | Deeper evaluation (confusion matrix, etc.) | pending |
+| **4** | Persist model + JSON inference | pending |
 | **5** | FastAPI serving | pending |
 | **6** | MLflow tracking | pending |
 | **7** | Tests | pending |
@@ -22,13 +25,11 @@ Educational MLOps project: **diabetes risk prediction** from simple health featu
 | **9** | GitHub Actions CI | pending |
 | **10** | Deploy (e.g. Cloud Run) | pending |
 
-We finish one step before starting the next.
-
 ---
 
 ## Step 1 — Data
 
-**Dataset:** Pima Indians Diabetes (UCI / public mirrors)  
+**Dataset:** Pima Indians Diabetes  
 **File:** `data/raw/pima-indians-diabetes.csv`
 
 | Column | Meaning |
@@ -45,7 +46,7 @@ We finish one step before starting the next.
 
 ### Explore the data
 
-**Notebook (recommended):** `notebooks/01_basic_data_analysis.ipynb`
+**Notebook:** `notebooks/01_basic_data_analysis.ipynb`
 
 ```bash
 cd /Users/wasim/diarisk
@@ -53,8 +54,23 @@ source .venv/bin/activate
 jupyter notebook notebooks/01_basic_data_analysis.ipynb
 ```
 
-Or the quick CLI script:
+Or the CLI script:
 
 ```bash
 python src/explore_data.py
 ```
+
+---
+
+## Step 2a — Logistic Regression baseline
+
+Train a baseline first, then compare against stronger models (e.g. LightGBM).
+
+```bash
+cd /Users/wasim/diarisk
+source .venv/bin/activate
+python src/train_logistic.py
+```
+
+Pipeline: **median impute** (zeros→missing) → **StandardScaler** → **LogisticRegression**  
+Metrics: `artifacts/metrics_logistic.json`
