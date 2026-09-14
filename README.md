@@ -14,7 +14,7 @@ Data: [Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) (
 - [x] FastAPI
 - [x] MLflow
 - [x] tests
-- [ ] Docker + CI
+- [x] Docker + CI
 - [ ] cloud deploy
 
 ## Setup
@@ -118,3 +118,20 @@ Open http://127.0.0.1:5001 and compare the two runs.
 ```bash
 pytest -q
 ```
+
+## Docker
+
+```bash
+docker build -t diarisk .
+docker run --rm -p 8000:8000 diarisk
+```
+
+Then: http://localhost:8000/docs
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) on every push/PR to `main`:
+
+1. install deps + `pytest`
+2. build Docker image
+3. on push to `main`, push image to `ghcr.io/wasimahmadpk/diarisk`
