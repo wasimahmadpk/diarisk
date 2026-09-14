@@ -13,7 +13,7 @@ Data: [Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) (
 - [x] model export / JSON inference
 - [x] FastAPI
 - [x] MLflow
-- [ ] tests
+- [x] tests
 - [ ] Docker + CI
 - [ ] cloud deploy
 
@@ -112,3 +112,9 @@ mlflow ui --backend-store-uri ./mlruns --port 5001
 
 Open http://127.0.0.1:5001 and compare the two runs.
 (On macOS, port 5000 is often taken by AirPlay.)
+
+## Tests
+
+```bash
+pytest -q
+```
