@@ -45,8 +45,16 @@ We finish one step before starting the next.
 
 ### Explore the data
 
+**Notebook (recommended):** `notebooks/01_basic_data_analysis.ipynb`
+
 ```bash
 cd /Users/wasim/diarisk
 source .venv/bin/activate
+jupyter notebook notebooks/01_basic_data_analysis.ipynb
+```
+
+Or the quick CLI script:
+
+```bash
 python src/explore_data.py
 ```
