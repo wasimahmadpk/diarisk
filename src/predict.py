@@ -42,8 +42,9 @@ def prepare_features(payload: dict[str, Any]) -> pd.DataFrame:
     return X
 
 
-def predict_one(payload: dict[str, Any]) -> dict[str, Any]:
-    model = load_model()
+def predict_one(payload: dict[str, Any], model=None) -> dict[str, Any]:
+    if model is None:
+        model = load_model()
     X = prepare_features(payload)
     proba = float(model.predict_proba(X)[0, 1])
     label = int(model.predict(X)[0])

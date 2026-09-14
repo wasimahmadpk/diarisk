@@ -11,7 +11,7 @@ Data: [Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) (
 - [x] logistic regression baseline
 - [x] LightGBM + comparison
 - [x] model export / JSON inference
-- [ ] FastAPI
+- [x] FastAPI
 - [ ] MLflow
 - [ ] tests
 - [ ] Docker + CI
@@ -83,4 +83,19 @@ Example output:
   "diabetes_probability": 0.72,
   "risk_level": "high"
 }
+```
+
+## API
+
+```bash
+uvicorn api:app --app-dir src --reload --port 8000
+```
+
+- Docs: http://localhost:8000/docs
+- Health: http://localhost:8000/health
+
+```bash
+curl -s http://localhost:8000/predict \
+  -H 'Content-Type: application/json' \
+  -d @samples/example_patient.json
 ```
