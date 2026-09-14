@@ -9,7 +9,10 @@ __pycache__/
 mlruns/
 artifacts/
 notebooks/
+data/
+tests/
+docs/
+terraform-aws/
 .DS_Store
 .env
 *.md
-!README.md

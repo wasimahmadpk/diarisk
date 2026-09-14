@@ -13,10 +13,6 @@ docker image ──push──> ECR ──> Lambda (container) ──> https://<i
 [Mangum](https://github.com/Kludex/mangum), so local `uvicorn` and Lambda serve
 identical code. Infrastructure lives in `terraform-aws/`.
 
-> Why not App Runner or ECS? Both keep at least one container running and bill
-> memory around the clock (~$10/month idle). Lambda is the only AWS option that
-> is genuinely free while unused.
-
 ## 1. Tools
 
 ```bash
