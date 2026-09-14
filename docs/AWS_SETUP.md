@@ -117,9 +117,10 @@ roll back what CI deployed.
 At 1024 MB a request of ~1 s uses 1 GB-s, so the free tier covers roughly
 400,000 calls per month. Idle cost is zero.
 
-The only thing that can eventually cost a little is ECR storage: the image is
-around 500 MB, so expect a few cents per month once the 12-month window ends.
-The lifecycle policy keeps just the last 3 images.
+The only thing that can eventually cost a little is ECR storage. The image is
+roughly 400 MB compressed, which still fits the free 500 MB; layers are shared
+between tags, so keeping the last 3 images (lifecycle policy) barely adds to
+that. After the 12-month window expect a few cents per month.
 
 Guardrails already in the config:
 
