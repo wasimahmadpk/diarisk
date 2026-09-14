@@ -1,76 +1,69 @@
 # DiaRisk
 
-**Diabetes risk prediction** from clinical health features, using the  
-[Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) dataset  
-(UCI Machine Learning Repository — established, widely used benchmark data).
+Predict whether a patient is likely diabetic from standard clinical measurements
+(glucose, BMI, blood pressure, insulin, age, etc.).
 
-Predict diabetes likelihood from glucose, BMI, age, blood pressure, and related measurements.  
-Built with a modern MLOps stack: training → evaluation → API → tracking → CI/CD → cloud.
+Data: [Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) (UCI), 768 samples.
 
----
+## Status
 
-## Project roadmap
+- [x] data + EDA notebook
+- [x] logistic regression baseline
+- [x] LightGBM + comparison
+- [ ] model export / JSON inference
+- [ ] FastAPI
+- [ ] MLflow
+- [ ] tests
+- [ ] Docker + CI
+- [ ] cloud deploy
 
-| Step | What we do | Status |
-|------|------------|--------|
-| **1** | Project setup & data analysis | ✅ done |
-| **2a** | Train Logistic Regression baseline | ✅ current |
-| **2b** | Train LightGBM and compare | next |
-| **3** | Deeper evaluation (confusion matrix, etc.) | pending |
-| **4** | Persist model + JSON inference | pending |
-| **5** | FastAPI serving | pending |
-| **6** | MLflow tracking | pending |
-| **7** | Tests | pending |
-| **8** | Docker | pending |
-| **9** | GitHub Actions CI | pending |
-| **10** | Deploy (e.g. Cloud Run) | pending |
-
----
-
-## Step 1 — Data
-
-**Dataset:** Pima Indians Diabetes  
-**File:** `data/raw/pima-indians-diabetes.csv`
-
-| Column | Meaning |
-|--------|---------|
-| pregnancies | Number of pregnancies |
-| glucose | Plasma glucose concentration |
-| blood_pressure | Diastolic blood pressure |
-| skin_thickness | Triceps skin fold thickness |
-| insulin | 2-Hour serum insulin |
-| bmi | Body mass index |
-| diabetes_pedigree | Diabetes pedigree function |
-| age | Age in years |
-| outcome | 1 = diabetes, 0 = no diabetes |
-
-### Explore the data
-
-**Notebook:** `notebooks/01_basic_data_analysis.ipynb`
+## Setup
 
 ```bash
-cd /Users/wasim/diarisk
+git clone https://github.com/wasimahmadpk/diarisk.git
+cd diarisk
+python3 -m venv .venv
 source .venv/bin/activate
-jupyter notebook notebooks/01_basic_data_analysis.ipynb
+pip install -r requirements.txt
 ```
 
-Or the CLI script:
+## Data
+
+Raw file: `data/raw/pima-indians-diabetes.csv`
+
+| column | description |
+|--------|-------------|
+| pregnancies | number of pregnancies |
+| glucose | plasma glucose |
+| blood_pressure | diastolic BP |
+| skin_thickness | triceps skin fold |
+| insulin | 2-hour serum insulin |
+| bmi | body mass index |
+| diabetes_pedigree | diabetes pedigree function |
+| age | age in years |
+| outcome | 1 = diabetes, 0 = not |
+
+Zeros in glucose / BP / skin / insulin / BMI are treated as missing.
+
+EDA:
 
 ```bash
+jupyter notebook notebooks/01_basic_data_analysis.ipynb
+# or
 python src/explore_data.py
 ```
 
----
+## Train
 
-## Step 2a — Logistic Regression baseline
-
-Train a baseline first, then compare against stronger models (e.g. LightGBM).
+Same split for both models (`seed=42`, 80/20, stratified).
 
 ```bash
-cd /Users/wasim/diarisk
-source .venv/bin/activate
 python src/train_logistic.py
+python src/train_lightgbm.py
+python src/compare_models.py
 ```
 
-Pipeline: **median impute** (zeros→missing) → **StandardScaler** → **LogisticRegression**  
-Metrics: `artifacts/metrics_logistic.json`
+- Logistic: impute → scale → logistic regression → `artifacts/metrics_logistic.json`
+- LightGBM: impute → LightGBM → `artifacts/metrics_lightgbm.json`
+
+On macOS, LightGBM needs OpenMP: `brew install libomp`
