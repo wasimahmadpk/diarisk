@@ -1,4 +1,4 @@
-aws_region        = "eu-central-1"
+aws_region        = "eu-north-1"
 function_name     = "diarisk-api"
 github_repository = "wasimahmadpk/diarisk"
 

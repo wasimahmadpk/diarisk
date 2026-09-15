@@ -25,7 +25,7 @@ resource "aws_ecr_lifecycle_policy" "diarisk" {
       description  = "Keep the ${var.ecr_keep_images} most recent images"
       selection = {
         tagStatus   = "any"
-        countType   = "imageCountMoreThanNumber"
+        countType   = "imageCountMoreThan"
         countNumber = var.ecr_keep_images
       }
       action = { type = "expire" }
@@ -99,6 +99,23 @@ resource "aws_lambda_function_url" "diarisk" {
     allow_methods = ["*"]
     allow_headers = ["*"]
   }
+}
+
+# Function URLs stay Forbidden on the AWS (new) Free plan even with AuthType NONE.
+# HTTP API is allowed in the home Region and gives a public HTTPS URL.
+resource "aws_apigatewayv2_api" "http" {
+  name          = "${var.function_name}-http"
+  protocol_type = "HTTP"
+  description   = "Public HTTP front door for DiaRisk"
+  target        = aws_lambda_function.diarisk.arn
+}
+
+resource "aws_lambda_permission" "apigw" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.diarisk.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
 }
 
 # Optional safety net: mail as soon as the account is forecast to cost money.

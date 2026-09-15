@@ -26,7 +26,7 @@ terraform -version
 
 ```bash
 aws configure
-# Access key, secret, region: eu-central-1, output: json
+# Access key, secret, region: eu-north-1, output: json
 aws sts get-caller-identity   # should print your account id
 ```
 
@@ -48,15 +48,16 @@ Lambda runs on x86_64, so on an Apple Silicon Mac build for `linux/amd64`:
 
 ```bash
 cd ..
-AWS_REGION=eu-central-1
+AWS_REGION=eu-north-1
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 REGISTRY=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
 aws ecr get-login-password --region $AWS_REGION \
   | docker login --username AWS --password-stdin $REGISTRY
 
-docker build --platform linux/amd64 -f Dockerfile.lambda -t $REGISTRY/diarisk:latest .
-docker push $REGISTRY/diarisk:latest
+docker buildx build --platform linux/amd64 --provenance=false --sbom=false \
+  --output type=image,name=$REGISTRY/diarisk:latest,push=true,oci-mediatypes=false \
+  -f Dockerfile.lambda .
 ```
 
 ### Test the image locally first
@@ -87,11 +88,14 @@ This creates the Lambda function, its Function URL, the execution role, a log
 group with 7-day retention and the role GitHub Actions uses to deploy.
 
 ```bash
-URL=$(terraform output -raw function_url)
-curl -s ${URL%/}/health
-curl -s ${URL%/}/predict -H 'Content-Type: application/json' -d @../samples/example_patient.json
-open ${URL%/}/docs
+URL=$(terraform output -raw api_url)
+curl -s $URL/health
+curl -s $URL/predict -H 'Content-Type: application/json' -d @../samples/example_patient.json
+open $URL/docs
 ```
+
+The Lambda Function URL is created too, but on the new AWS Free plan it returns
+`403 Forbidden` even with `AuthType=NONE`. The HTTP API is the public address.
 
 The first call after a while is a cold start and takes a few seconds (the
 image has to be loaded and the model unpickled); afterwards responses are fast
@@ -105,7 +109,7 @@ via OIDC — no AWS keys stored in GitHub.
 
 ```bash
 gh secret set AWS_DEPLOY_ROLE_ARN --body "$(terraform output -raw github_actions_role_arn)"
-gh variable set AWS_REGION --body "eu-central-1"
+gh variable set AWS_REGION --body "eu-north-1"
 gh variable set ECR_REPOSITORY --body "diarisk"
 gh variable set LAMBDA_FUNCTION_NAME --body "$(terraform output -raw function_name)"
 gh variable set AWS_DEPLOY --body "true"
@@ -151,6 +155,10 @@ terraform destroy
 
 ## Troubleshooting
 
+- **AccessDenied with `explicit deny in a service control policy`** — on the
+  new AWS Free plan, compute services only work in the account's home Region.
+  For this account that is `eu-north-1` (Stockholm). Frankfurt (`eu-central-1`)
+  is blocked even with AdministratorAccess. Use `--region eu-north-1`.
 - **`Runtime.InvalidEntrypoint` / image errors** — the image was built for
   arm64. Rebuild with `--platform linux/amd64`.
 - **`FileNotFoundError` for the model** — `models/diarisk_lightgbm.joblib` must

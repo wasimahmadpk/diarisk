@@ -1,8 +1,10 @@
 # Lets GitHub Actions push images and trigger deployments without
 # long-lived access keys: the workflow exchanges its OIDC token for this role.
+# The Free-plan SCP denies iam:CreateOpenIDConnectProvider, so this whole
+# block is optional (enable_github_oidc = true).
 
 resource "aws_iam_openid_connect_provider" "github" {
-  count = var.create_github_oidc_provider ? 1 : 0
+  count = var.enable_github_oidc && var.create_github_oidc_provider ? 1 : 0
 
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
@@ -10,16 +12,20 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 data "aws_iam_openid_connect_provider" "github" {
-  count = var.create_github_oidc_provider ? 0 : 1
+  count = var.enable_github_oidc && !var.create_github_oidc_provider ? 1 : 0
 
   url = "https://token.actions.githubusercontent.com"
 }
 
 locals {
-  github_oidc_arn = var.create_github_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : data.aws_iam_openid_connect_provider.github[0].arn
+  github_oidc_arn = !var.enable_github_oidc ? null : (
+    var.create_github_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : data.aws_iam_openid_connect_provider.github[0].arn
+  )
 }
 
 data "aws_iam_policy_document" "github_actions_assume" {
+  count = var.enable_github_oidc ? 1 : 0
+
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
 
@@ -43,11 +49,14 @@ data "aws_iam_policy_document" "github_actions_assume" {
 }
 
 resource "aws_iam_role" "github_actions" {
+  count              = var.enable_github_oidc ? 1 : 0
   name               = "${var.function_name}-github-actions"
-  assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume[0].json
 }
 
 data "aws_iam_policy_document" "github_actions" {
+  count = var.enable_github_oidc ? 1 : 0
+
   statement {
     sid       = "EcrAuth"
     actions   = ["ecr:GetAuthorizationToken"]
@@ -80,7 +89,8 @@ data "aws_iam_policy_document" "github_actions" {
 }
 
 resource "aws_iam_role_policy" "github_actions" {
+  count  = var.enable_github_oidc ? 1 : 0
   name   = "${var.function_name}-deploy"
-  role   = aws_iam_role.github_actions.id
-  policy = data.aws_iam_policy_document.github_actions.json
+  role   = aws_iam_role.github_actions[0].id
+  policy = data.aws_iam_policy_document.github_actions[0].json
 }

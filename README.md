@@ -15,7 +15,7 @@ Data: [Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) (
 - [x] MLflow
 - [x] tests
 - [x] Docker + CI
-- [ ] cloud deploy (AWS Lambda, config ready)
+- [x] cloud deploy (AWS Lambda + HTTP API, eu-north-1)
 
 ## Setup
 
@@ -143,17 +143,12 @@ GitHub Actions (`.github/workflows/ci.yml`) on every push/PR to `main`:
 
 ## Cloud deploy (AWS)
 
-The API runs as a container on AWS Lambda behind a Function URL, so it scales
-to zero and costs nothing while idle. `src/lambda_handler.py` adapts the same
-FastAPI app via Mangum. Infrastructure lives in `terraform-aws/`.
+Live API (Stockholm, `eu-north-1`):
 
-```bash
-cd terraform-aws
-terraform init
-terraform apply -target=aws_ecr_repository.diarisk   # registry first
-# build + push the image (docker build -f Dockerfile.lambda ...), then
-terraform apply
-terraform output function_url
-```
+- Health: https://b2je1touwh.execute-api.eu-north-1.amazonaws.com/health
+- Docs: https://b2je1touwh.execute-api.eu-north-1.amazonaws.com/docs
 
-Full walkthrough incl. GitHub OIDC and costs: [docs/AWS_SETUP.md](docs/AWS_SETUP.md)
+The function runs as a container on Lambda. On the new AWS Free plan the
+Function URL stays Forbidden, so a cheap HTTP API sits in front. Idle cost is
+still zero. Use `eu-north-1` — Frankfurt is blocked by the account's home-Region
+SCP. Details: [docs/AWS_SETUP.md](docs/AWS_SETUP.md)

@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region for ECR and Lambda."
   type        = string
-  default     = "eu-central-1"
+  default     = "eu-north-1"
 }
 
 variable "function_name" {
@@ -70,6 +70,12 @@ variable "github_repository" {
   description = "owner/repo allowed to push images and deploy via OIDC."
   type        = string
   default     = "wasimahmadpk/diarisk"
+}
+
+variable "enable_github_oidc" {
+  description = "Wire GitHub Actions OIDC deploy. Off by default: the Free-plan SCP blocks iam:CreateOpenIDConnectProvider."
+  type        = bool
+  default     = false
 }
 
 variable "create_github_oidc_provider" {
