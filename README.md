@@ -4,19 +4,53 @@ Predict diabetes risk from standard clinical measurements (glucose, BMI, blood p
 
 Data: [Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) (UCI), 768 samples.
 
-**Live API** (`eu-north-1`):
+This is a decision-support model, not a medical diagnosis.
 
-- Health: https://b2je1touwh.execute-api.eu-north-1.amazonaws.com/health
-- Docs: https://b2je1touwh.execute-api.eu-north-1.amazonaws.com/docs
-- Predict: `POST` https://b2je1touwh.execute-api.eu-north-1.amazonaws.com/predict
+## Live API
 
-## Stack
+Region: `eu-north-1`. Interactive docs: [Swagger UI](https://b2je1touwh.execute-api.eu-north-1.amazonaws.com/docs).
 
-- Training: scikit-learn logistic regression (baseline) and LightGBM, compared on a shared split
-- Tracking: MLflow
-- Serving: FastAPI, packaged as a container
-- Production: AWS Lambda (container image on ECR) behind Amazon API Gateway
-- CI: GitHub Actions (`pytest`, image build, GHCR)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Service and model status |
+| `/predict` | POST | Risk score from eight clinical fields |
+| `/docs` | GET | OpenAPI UI |
+
+```bash
+curl -s https://b2je1touwh.execute-api.eu-north-1.amazonaws.com/health
+
+curl -s https://b2je1touwh.execute-api.eu-north-1.amazonaws.com/predict \
+  -H 'Content-Type: application/json' \
+  -d @samples/example_patient.json
+```
+
+Example response:
+
+```json
+{
+  "diabetes_prediction": 1,
+  "diabetes_probability": 0.8702,
+  "risk_level": "high"
+}
+```
+
+`risk_level` is `low` (< 0.3), `moderate` (< 0.6), or `high`.
+
+## Architecture
+
+```
+train (sklearn / LightGBM) → joblib artifact
+        ↓
+FastAPI  →  Docker image  →  Amazon ECR
+                                ↓
+                    AWS Lambda  →  API Gateway  →  HTTPS
+```
+
+- Training: logistic regression baseline and LightGBM on the same 80/20 stratified split (`seed=42`)
+- Tracking: MLflow experiment `diarisk`
+- Serving: FastAPI in a container (`Dockerfile` locally, `Dockerfile.lambda` on AWS)
+- Production: Lambda + HTTP API; infrastructure in `terraform-aws/`
+- CI: GitHub Actions (`pytest`, image build, publish to GHCR)
 
 ## Setup
 
@@ -27,6 +61,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+On macOS, LightGBM needs OpenMP: `brew install libomp`
 
 ## Data
 
@@ -48,13 +84,10 @@ Zeros in glucose, blood pressure, skin thickness, insulin, and BMI are treated a
 
 ```bash
 jupyter notebook notebooks/01_basic_data_analysis.ipynb
-# or
 python src/explore_data.py
 ```
 
 ## Train
-
-Same split for both models (`seed=42`, 80/20, stratified).
 
 ```bash
 python src/train_logistic.py
@@ -62,26 +95,16 @@ python src/train_lightgbm.py
 python src/compare_models.py
 ```
 
-- Logistic regression: impute → scale → classifier → `artifacts/metrics_logistic.json`
-- LightGBM: impute → classifier → `artifacts/metrics_lightgbm.json` and `models/diarisk_lightgbm.joblib`
+| Model | Pipeline | Output |
+|-------|----------|--------|
+| Logistic regression | impute → scale → classifier | `artifacts/metrics_logistic.json` |
+| LightGBM | impute → classifier | `artifacts/metrics_lightgbm.json`, `models/diarisk_lightgbm.joblib` |
 
-On macOS, LightGBM needs OpenMP: `brew install libomp`
-
-## Predict
+## Predict (local)
 
 ```bash
 python src/predict.py --json samples/example_patient.json
 ```
-
-```json
-{
-  "diabetes_prediction": 1,
-  "diabetes_probability": 0.72,
-  "risk_level": "high"
-}
-```
-
-## API (local)
 
 ```bash
 uvicorn api:app --app-dir src --reload --port 8000
@@ -98,15 +121,13 @@ curl -s http://localhost:8000/predict \
 
 ## MLflow
 
-Training logs parameters, metrics, and the model artifact under experiment `diarisk`.
-
 ```bash
 python src/train_logistic.py
 python src/train_lightgbm.py
 mlflow ui --backend-store-uri ./mlruns --port 5001
 ```
 
-http://127.0.0.1:5001 (port 5000 is often taken by AirPlay on macOS.)
+Open http://127.0.0.1:5001 (port 5000 is often used by AirPlay on macOS).
 
 ## Tests
 
@@ -116,7 +137,7 @@ pytest -q
 
 ## Docker
 
-Runtime image (API only; see `requirements-api.txt`):
+Runtime image (API dependencies only: `requirements-api.txt`):
 
 ```bash
 docker build -t diarisk .
@@ -127,10 +148,10 @@ Lambda image: `Dockerfile.lambda`.
 
 ## CI
 
-On every push or pull request to `main`, GitHub Actions installs dependencies, runs `pytest`, and builds the Docker images. Pushes to `main` also publish `ghcr.io/wasimahmadpk/diarisk`. Optional AWS rollout (ECR + Lambda) is gated by the repository variable `AWS_DEPLOY`.
+On each push or pull request to `main`, GitHub Actions installs dependencies, runs `pytest`, and builds both images. Pushes to `main` also publish `ghcr.io/wasimahmadpk/diarisk`. Updating Lambda from CI is optional (`AWS_DEPLOY` repository variable).
 
-## AWS
+## Operations
 
-The production service is a Lambda function running the container image, exposed through an HTTP API in `eu-north-1`. Infrastructure is defined in `terraform-aws/`.
+Terraform and deploy steps: [docs/AWS_SETUP.md](docs/AWS_SETUP.md).
 
-Deploy and operations: [docs/AWS_SETUP.md](docs/AWS_SETUP.md).
+Lambda metrics (invocations, errors, duration): [diarisk-api Monitor](https://eu-north-1.console.aws.amazon.com/lambda/home?region=eu-north-1#/functions/diarisk-api?tab=monitoring).
