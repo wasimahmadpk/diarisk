@@ -12,6 +12,7 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from model_io import load_model
@@ -62,6 +63,11 @@ class PredictionResponse(BaseModel):
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "diarisk", "model_loaded": _model is not None}
+
+
+@app.options("/{full_path:path}")
+def cors_preflight(full_path: str):
+    return Response(status_code=204)
 
 
 @app.post("/predict", response_model=PredictionResponse)

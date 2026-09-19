@@ -5,7 +5,10 @@ from fastapi.testclient import TestClient
 from api import app
 
 
-def test_health():
+def test_options_predict():
+    with TestClient(app) as client:
+        r = client.options("/predict")
+        assert r.status_code == 204
     with TestClient(app) as client:
         r = client.get("/health")
         assert r.status_code == 200
