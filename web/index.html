@@ -172,7 +172,9 @@
     <div id="monitor" class="panel">
       <div class="metrics" id="metric-cards"></div>
       <div class="charts" id="charts"></div>
+      <div class="metrics" id="drift-cards" style="margin-top:12px"></div>
       <p class="fine" id="stats-meta" style="margin-top:16px">CloudWatch totals for the last 72 hours.</p>
+      <p class="fine" id="drift-meta"></p>
     </div>
   </div>
   <script>
@@ -185,7 +187,7 @@
         btn.classList.add("active");
         document.querySelectorAll(".panel").forEach((p) => p.classList.remove("show"));
         document.getElementById(btn.dataset.tab).classList.add("show");
-        if (btn.dataset.tab === "monitor") loadStats();
+        if (btn.dataset.tab === "monitor") { loadStats(); loadDrift(); }
       });
     });
 
@@ -242,6 +244,35 @@
           "Last " + s.window_hours + "h · " + (s.region || "") + " · " + (s.generated_at || "");
       } catch (err) {
         cards.innerHTML = "<p class='err'>Could not load metrics.</p>";
+      }
+    }
+
+    async function loadDrift() {
+      const box = document.getElementById("drift-cards");
+      const meta = document.getElementById("drift-meta");
+      box.innerHTML = "";
+      meta.textContent = "";
+      try {
+        const res = await fetch(API + "/drift?hours=72");
+        const d = await res.json();
+        if (!res.ok) throw new Error("drift failed");
+        const data = d.data || {};
+        const score = d.score || {};
+        const items = [
+          ["Live samples", fmt(d.n_current)],
+          ["Data drift", data.data_drift ? "yes" : (d.insufficient_sample ? "need 30+" : "no")],
+          ["Score drift", score.score_drift ? "yes" : (d.insufficient_sample ? "need 30+" : "no")],
+          ["Max PSI", fmt(data.max_psi)],
+          ["Mean score", fmt(score.mean)],
+          ["Baseline mean", fmt(score.baseline_mean)],
+          ["Positive rate", fmt(score.positive_rate)],
+          ["Baseline pos.", fmt(score.baseline_positive_rate)],
+        ];
+        box.innerHTML = items.map(([k, v]) => "<div class='metric'><span>" + k + "</span><strong>" + v + "</strong></div>").join("");
+        const drifted = (data.drifted_features || []).join(", ") || "none";
+        meta.textContent = (score.note || "Score drift is not labeled accuracy.") + " Shifted features: " + drifted + ".";
+      } catch (err) {
+        box.innerHTML = "<p class='placeholder'>Live drift needs the updated API (table + /drift).</p>";
       }
     }
 

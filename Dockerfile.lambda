@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements-api.txt
 # src/*.py import each other flat, so they go directly into the task root.
 COPY src/ ${LAMBDA_TASK_ROOT}/
 COPY models/ ${LAMBDA_TASK_ROOT}/models/
+COPY artifacts/drift_reference.json ${LAMBDA_TASK_ROOT}/artifacts/drift_reference.json
 
 ENV DIARISK_MODEL_PATH=${LAMBDA_TASK_ROOT}/models/diarisk_lightgbm.joblib
 

@@ -9,7 +9,8 @@ mlruns/
 .env
 data/processed/
 !data/processed/.gitkeep
-artifacts/
+artifacts/*
 !artifacts/.gitkeep
+!artifacts/drift_reference.json
 web/node_modules/
 web/dist/

@@ -15,7 +15,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
+from drift import live_report
 from model_io import load_model
+from observations import recent_observations, record_observation
 from predict import predict_one
 from stats import collect_stats
 
@@ -80,11 +82,27 @@ def cors_preflight(full_path: str):
     return Response(status_code=204)
 
 
+@app.get("/drift")
+def drift(hours: int = 72):
+    """Live data drift and predicted-score drift from recent /predict calls."""
+    try:
+        rows = recent_observations(hours=max(1, min(hours, 72)))
+        return live_report(rows)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Drift unavailable: {exc}") from exc
+
+
 @app.post("/predict", response_model=PredictionResponse)
 def predict(features: PatientFeatures):
     if _model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
     try:
-        return predict_one(features.model_dump(), model=_model)
+        result = predict_one(features.model_dump(), model=_model)
+        record_observation(
+            features.model_dump(),
+            result["diabetes_prediction"],
+            result["diabetes_probability"],
+        )
+        return result
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

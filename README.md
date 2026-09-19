@@ -13,7 +13,8 @@ Region: `eu-north-1`. Interactive docs: [Swagger UI](https://b2je1touwh.execute-
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Service and model status |
-| `/stats` | GET | CloudWatch traffic, latency, errors (last 24h) |
+| `/stats` | GET | CloudWatch traffic, latency, errors |
+| `/drift` | GET | Live data / score drift from recent `/predict` calls |
 | `/predict` | POST | Risk score from eight clinical fields |
 | `/docs` | GET | OpenAPI UI |
 
@@ -105,6 +106,12 @@ python src/compare_models.py
 
 ```bash
 python src/predict.py --json samples/example_patient.json
+python src/drift.py
+python src/drift.py --current path/to/recent.csv
+```
+
+`src/drift.py` compares new rows to the training table (PSI per feature) and, if an `outcome` column is present, to the saved LightGBM test metrics. A drop of 0.05 ROC-AUC or F1 is treated as model drift. CloudWatch does not store patient features, so this is an offline batch check.
+
 ```
 
 ```bash
