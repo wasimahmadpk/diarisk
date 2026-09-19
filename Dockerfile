@@ -15,6 +15,7 @@ RUN pip install --upgrade pip \
 COPY src/ src/
 COPY models/ models/
 COPY samples/ samples/
+COPY artifacts/drift_reference.json artifacts/drift_reference.json
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
