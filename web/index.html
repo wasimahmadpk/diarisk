@@ -9,15 +9,15 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0f1412;
-      --panel: #171d1a;
-      --ink: #e8eee9;
-      --muted: #8b9a93;
-      --line: #2a3430;
-      --accent: #3dcfb0;
-      --low: #5ee0a8;
-      --mod: #f0b45a;
-      --high: #ff7a6e;
+      --bg: #f7f8f6;
+      --panel: #ffffff;
+      --ink: #1a2420;
+      --muted: #66736d;
+      --line: #e4eae6;
+      --accent: #0f7a64;
+      --low: #157a48;
+      --mod: #a05c0c;
+      --high: #b42318;
     }
     * { box-sizing: border-box; }
     body {
@@ -25,9 +25,7 @@
       min-height: 100vh;
       color: var(--ink);
       font-family: "IBM Plex Sans", system-ui, sans-serif;
-      background:
-        radial-gradient(700px 280px at 12% -8%, rgba(61, 207, 176, 0.12), transparent),
-        var(--bg);
+      background: var(--bg);
     }
     .wrap { max-width: 840px; margin: 0 auto; padding: 40px 20px 80px; }
     header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 36px; }
@@ -42,7 +40,7 @@
     .tabs {
       display: flex;
       padding: 4px;
-      background: var(--panel);
+      background: #eef1ef;
       border: 1px solid var(--line);
       border-radius: 999px;
     }
@@ -57,7 +55,7 @@
       border-radius: 999px;
       cursor: pointer;
     }
-    .tabs button.active { background: var(--accent); color: #06221b; }
+    .tabs button.active { background: var(--accent); color: #fff; }
     .panel { display: none; }
     .panel.show { display: block; }
     .layout { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 16px; }
@@ -66,6 +64,7 @@
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 22px;
+      box-shadow: 0 8px 24px rgba(26, 36, 32, 0.04);
     }
     h2 { margin: 0 0 16px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -73,7 +72,7 @@
     input {
       font: inherit;
       color: var(--ink);
-      background: #101614;
+      background: #fff;
       border: 1px solid var(--line);
       border-radius: 10px;
       padding: 10px 12px;
@@ -86,7 +85,7 @@
       border-radius: 12px;
       padding: 12px;
       background: var(--accent);
-      color: #06221b;
+      color: #fff;
       font: inherit;
       font-weight: 600;
       cursor: pointer;
@@ -103,9 +102,9 @@
       padding: 4px 10px;
       border-radius: 999px;
     }
-    .low { background: rgba(94, 224, 168, 0.15); color: var(--low); }
-    .moderate { background: rgba(240, 180, 90, 0.15); color: var(--mod); }
-    .high { background: rgba(255, 122, 110, 0.15); color: var(--high); }
+    .low { background: #e6f6ee; color: var(--low); }
+    .moderate { background: #f8edd9; color: var(--mod); }
+    .high { background: #fde8e6; color: var(--high); }
     .pct {
       font-family: "IBM Plex Serif", Georgia, serif;
       font-size: 4.2rem;
@@ -203,7 +202,7 @@
       });
       const line = coords.map((c, i) => (i ? "L" : "M") + c[0] + " " + c[1]).join(" ");
       const area = line + " L" + coords[coords.length - 1][0] + " " + (h - pad) + " L" + coords[0][0] + " " + (h - pad) + " Z";
-      return "<svg class='spark' viewBox='0 0 " + w + " " + h + "' preserveAspectRatio='none'><path d='" + area + "' fill='rgba(61,207,176,0.12)'/><path d='" + line + "' fill='none' stroke='#3dcfb0' stroke-width='2'/></svg>";
+      return "<svg class='spark' viewBox='0 0 " + w + " " + h + "' preserveAspectRatio='none'><path d='" + area + "' fill='rgba(15,122,100,0.12)'/><path d='" + line + "' fill='none' stroke='#0f7a64' stroke-width='2'/></svg>";
     }
 
     function fmt(v, suffix) {
