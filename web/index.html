@@ -6,148 +6,174 @@
   <title>DiaRisk</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #eef3f1;
-      --ink: #16302a;
-      --muted: #5a6f69;
-      --card: #ffffff;
-      --line: #d5e0db;
-      --accent: #0e6b58;
-      --low: #1f7a4d;
-      --mod: #b86a12;
-      --high: #b42318;
+      --bg: #0f1412;
+      --panel: #171d1a;
+      --ink: #e8eee9;
+      --muted: #8b9a93;
+      --line: #2a3430;
+      --accent: #3dcfb0;
+      --low: #5ee0a8;
+      --mod: #f0b45a;
+      --high: #ff7a6e;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: "Source Sans 3", system-ui, sans-serif;
       color: var(--ink);
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
       background:
-        radial-gradient(900px 320px at 80% -10%, #d9ebe4, transparent),
+        radial-gradient(700px 280px at 12% -8%, rgba(61, 207, 176, 0.12), transparent),
         var(--bg);
     }
-    .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 72px; }
+    .wrap { max-width: 840px; margin: 0 auto; padding: 40px 20px 80px; }
+    header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 36px; }
     h1 {
-      font-family: "Source Serif 4", Georgia, serif;
-      font-size: clamp(2rem, 4vw, 2.6rem);
-      margin: 0 0 8px;
+      font-family: "IBM Plex Serif", Georgia, serif;
+      font-size: 1.65rem;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+      margin: 0;
     }
-    .lede { color: var(--muted); margin: 0 0 28px; max-width: 40rem; line-height: 1.5; }
-    .layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; }
-    .card {
-      background: var(--card);
+    .lede { margin: 6px 0 0; color: var(--muted); font-size: 0.92rem; }
+    .tabs {
+      display: flex;
+      padding: 4px;
+      background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 22px;
-      box-shadow: 0 16px 40px rgba(22, 48, 42, 0.06);
+      border-radius: 999px;
     }
-    h2 { font-size: 1.05rem; margin: 0 0 16px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
-    label { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; font-weight: 600; }
-    input {
-      font: inherit;
-      font-weight: 400;
-      padding: 9px 11px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-    }
-    input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-    button {
-      margin-top: 18px;
-      width: 100%;
+    .tabs button {
       border: 0;
-      border-radius: 11px;
-      padding: 12px 16px;
-      background: var(--accent);
-      color: #fff;
+      background: transparent;
+      color: var(--muted);
       font: inherit;
-      font-weight: 700;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 7px 14px;
+      border-radius: 999px;
       cursor: pointer;
     }
-    button:disabled { opacity: 0.7; cursor: wait; }
-    .result .placeholder { color: var(--muted); line-height: 1.5; }
+    .tabs button.active { background: var(--accent); color: #06221b; }
+    .panel { display: none; }
+    .panel.show { display: block; }
+    .layout { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 16px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+    }
+    h2 { margin: 0 0 16px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    label { display: flex; flex-direction: column; gap: 6px; font-size: 0.78rem; color: var(--muted); }
+    input {
+      font: inherit;
+      color: var(--ink);
+      background: #101614;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    input:focus { outline: none; border-color: var(--accent); }
+    .go {
+      margin-top: 16px;
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 12px;
+      background: var(--accent);
+      color: #06221b;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .go:disabled { opacity: 0.55; cursor: wait; }
+    .result { min-height: 280px; display: flex; flex-direction: column; }
+    .placeholder { color: var(--muted); line-height: 1.55; margin: 0; }
     .badge {
       display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      font-size: 0.72rem;
-      font-weight: 700;
       padding: 4px 10px;
       border-radius: 999px;
     }
-    .low { background: #e3f5eb; color: var(--low); }
-    .moderate { background: #f8ead6; color: var(--mod); }
-    .high { background: #fde8e6; color: var(--high); }
+    .low { background: rgba(94, 224, 168, 0.15); color: var(--low); }
+    .moderate { background: rgba(240, 180, 90, 0.15); color: var(--mod); }
+    .high { background: rgba(255, 122, 110, 0.15); color: var(--high); }
     .pct {
-      font-family: "Source Serif 4", Georgia, serif;
-      font-size: 3.4rem;
+      font-family: "IBM Plex Serif", Georgia, serif;
+      font-size: 4.2rem;
+      font-weight: 500;
+      letter-spacing: -0.04em;
       line-height: 1;
-      margin: 12px 0 6px;
+      margin: 18px 0 10px;
     }
-    .pct span { font-size: 1.2rem; color: var(--muted); }
+    .pct span { font-size: 1.15rem; color: var(--muted); }
     .err { color: var(--high); }
-    .fine { margin-top: 22px; font-size: 0.78rem; color: var(--muted); line-height: 1.45; }
-    .tabs { display: flex; gap: 8px; margin: 0 0 22px; }
-    .tabs button {
-      width: auto;
-      margin: 0;
-      background: transparent;
-      color: var(--ink);
-      border: 1px solid var(--line);
-      padding: 8px 14px;
-    }
-    .tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .panel { display: none; }
-    .panel.show { display: block; }
-    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
-    .metric { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
-    .metric span { display: block; color: var(--muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-    .metric strong { display: block; font-size: 1.45rem; margin-top: 6px; }
-    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    svg.spark { width: 100%; height: 90px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+    .fine { margin: auto 0 0; padding-top: 18px; font-size: 0.75rem; color: var(--muted); line-height: 1.45; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+    .metric { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+    .metric span { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+    .metric strong { display: block; margin-top: 8px; font-size: 1.35rem; font-weight: 500; }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    svg.spark { width: 100%; height: 88px; }
     @media (max-width: 720px) {
-      .layout, .grid, .metrics, .charts { grid-template-columns: 1fr; }
+      header { flex-direction: column; }
+      .layout, .grid, .metrics, .charts { grid-template-columns: 1fr 1fr; }
+      .layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .grid, .metrics, .charts { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>DiaRisk</h1>
-    <p class="lede">Estimate diabetes risk from eight clinical measurements. This is decision support, not a diagnosis.</p>
-    <div class="tabs">
-      <button type="button" class="active" data-tab="assess">Assess</button>
-      <button type="button" data-tab="monitor">Monitoring</button>
-    </div>
+    <header>
+      <div>
+        <h1>DiaRisk</h1>
+        <p class="lede">Eight measurements. One risk estimate. Not a diagnosis.</p>
+      </div>
+      <nav class="tabs">
+        <button type="button" class="active" data-tab="assess">Assess</button>
+        <button type="button" data-tab="monitor">Monitor</button>
+      </nav>
+    </header>
+
     <div id="assess" class="panel show">
-    <div class="layout">
-      <form class="card" id="form">
-        <h2>Measurements</h2>
-        <div class="grid">
-          <label>Pregnancies <input name="pregnancies" type="number" min="0" step="1" value="2" required /></label>
-          <label>Glucose (mg/dL) <input name="glucose" type="number" min="0" step="1" value="140" required /></label>
-          <label>Blood pressure (mmHg) <input name="blood_pressure" type="number" min="0" step="1" value="72" required /></label>
-          <label>Skin thickness (mm) <input name="skin_thickness" type="number" min="0" step="1" value="35" required /></label>
-          <label>Insulin (µU/mL) <input name="insulin" type="number" min="0" step="1" value="110" required /></label>
-          <label>BMI <input name="bmi" type="number" min="0" step="0.1" value="32.5" required /></label>
-          <label>Diabetes pedigree <input name="diabetes_pedigree" type="number" min="0" step="0.01" value="0.55" required /></label>
-          <label>Age (years) <input name="age" type="number" min="0" step="1" value="45" required /></label>
-        </div>
-        <button type="submit">Assess risk</button>
-      </form>
-      <aside class="card result">
-        <h2>Result</h2>
-        <div id="out"><p class="placeholder">Enter values and assess risk to see the model output.</p></div>
-        <p class="fine">Trained on the Pima Indians Diabetes dataset (women of Pima heritage in that study). Confirm findings with a clinician.</p>
-      </aside>
+      <div class="layout">
+        <form class="card" id="form">
+          <h2>Inputs</h2>
+          <div class="grid">
+            <label>Pregnancies <input name="pregnancies" type="number" min="0" step="1" value="2" required /></label>
+            <label>Glucose (mg/dL) <input name="glucose" type="number" min="0" step="1" value="140" required /></label>
+            <label>Blood pressure <input name="blood_pressure" type="number" min="0" step="1" value="72" required /></label>
+            <label>Skin thickness <input name="skin_thickness" type="number" min="0" step="1" value="35" required /></label>
+            <label>Insulin (µU/mL) <input name="insulin" type="number" min="0" step="1" value="110" required /></label>
+            <label>BMI <input name="bmi" type="number" min="0" step="0.1" value="32.5" required /></label>
+            <label>Pedigree <input name="diabetes_pedigree" type="number" min="0" step="0.01" value="0.55" required /></label>
+            <label>Age <input name="age" type="number" min="0" step="1" value="45" required /></label>
+          </div>
+          <button class="go" type="submit">Assess risk</button>
+        </form>
+        <aside class="card result">
+          <h2>Estimate</h2>
+          <div id="out"><p class="placeholder">Fill the form, then assess.</p></div>
+          <p class="fine">Model trained on the Pima Indians Diabetes cohort. Confirm with a clinician.</p>
+        </aside>
+      </div>
     </div>
-    </div>
+
     <div id="monitor" class="panel">
       <div class="metrics" id="metric-cards"></div>
       <div class="charts" id="charts"></div>
-      <p class="fine" id="stats-meta">CloudWatch totals for the last 72 hours. New calls can take a few minutes to appear.</p>
+      <p class="fine" id="stats-meta" style="margin-top:16px">CloudWatch totals for the last 72 hours.</p>
     </div>
   </div>
   <script>
@@ -165,19 +191,19 @@
     });
 
     function spark(points) {
-      if (!points || !points.length) {
-        return "<svg class='spark'></svg>";
-      }
+      if (!points || !points.length) return "<svg class='spark'></svg>";
       const vals = points.map((p) => Number(p.v));
       const max = Math.max(...vals, 1);
-      const w = 320, h = 90, pad = 8;
+      const w = 320, h = 88, pad = 8;
       const step = (w - pad * 2) / Math.max(vals.length - 1, 1);
-      const d = vals.map((v, i) => {
+      const coords = vals.map((v, i) => {
         const x = pad + i * step;
         const y = h - pad - (v / max) * (h - pad * 2);
-        return (i ? "L" : "M") + x + " " + y;
-      }).join(" ");
-      return "<svg class='spark' viewBox='0 0 " + w + " " + h + "' preserveAspectRatio='none'><path d='" + d + "' fill='none' stroke='#0e6b58' stroke-width='2'/></svg>";
+        return [x, y];
+      });
+      const line = coords.map((c, i) => (i ? "L" : "M") + c[0] + " " + c[1]).join(" ");
+      const area = line + " L" + coords[coords.length - 1][0] + " " + (h - pad) + " L" + coords[0][0] + " " + (h - pad) + " Z";
+      return "<svg class='spark' viewBox='0 0 " + w + " " + h + "' preserveAspectRatio='none'><path d='" + area + "' fill='rgba(61,207,176,0.12)'/><path d='" + line + "' fill='none' stroke='#3dcfb0' stroke-width='2'/></svg>";
     }
 
     function fmt(v, suffix) {
@@ -190,41 +216,36 @@
     async function loadStats() {
       const cards = document.getElementById("metric-cards");
       const charts = document.getElementById("charts");
-      cards.innerHTML = "<p class='placeholder'>Loading CloudWatch metrics…</p>";
+      cards.innerHTML = "<p class='placeholder'>Loading…</p>";
       charts.innerHTML = "";
       try {
         const res = await fetch(API + "/stats?hours=72");
         const s = await res.json();
-        if (!res.ok) throw new Error(s.detail || "stats failed");
+        if (!res.ok) throw new Error("stats failed");
         const L = s.lambda || {};
         const A = s.api || {};
         const items = [
+          ["Requests", fmt(A.requests)],
           ["Invocations", fmt(L.invocations)],
           ["Errors", fmt(L.errors)],
-          ["Error rate", fmt(L.error_rate_pct, "%")],
+          ["Latency", fmt(A.latency_avg_ms, " ms")],
+          ["4xx", fmt(A.status_4xx)],
+          ["5xx", fmt(A.status_5xx)],
+          ["p95", fmt(L.duration_p95_ms, " ms")],
           ["Throttles", fmt(L.throttles)],
-          ["Duration avg", fmt(L.duration_avg_ms, " ms")],
-          ["Duration p50", fmt(L.duration_p50_ms, " ms")],
-          ["Duration p95", fmt(L.duration_p95_ms, " ms")],
-          ["Max concurrency", fmt(L.concurrent_max)],
-          ["HTTP requests", fmt(A.requests)],
-          ["HTTP 4xx", fmt(A.status_4xx)],
-          ["HTTP 5xx", fmt(A.status_5xx)],
-          ["API latency", fmt(A.latency_avg_ms, " ms")],
         ];
         cards.innerHTML = items.map(([k, v]) => "<div class='metric'><span>" + k + "</span><strong>" + v + "</strong></div>").join("");
         const series = s.series || {};
         charts.innerHTML =
           "<div class='card'><h2>Invocations</h2>" + spark(series.invocations) + "</div>" +
-          "<div class='card'><h2>Duration (avg)</h2>" + spark(series.duration_avg) + "</div>" +
-          "<div class='card'><h2>Errors</h2>" + spark(series.errors) + "</div>" +
           "<div class='card'><h2>HTTP requests</h2>" + spark(series.api_requests) + "</div>";
         document.getElementById("stats-meta").textContent =
-          "Last " + s.window_hours + "h in " + s.region + " · " + (s.generated_at || "");
+          "Last " + s.window_hours + "h · " + (s.region || "") + " · " + (s.generated_at || "");
       } catch (err) {
         cards.innerHTML = "<p class='err'>Could not load metrics.</p>";
       }
     }
+
     document.getElementById("form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const payload = {};
@@ -247,11 +268,11 @@
         const pct = Math.round(body.diabetes_probability * 100);
         const label = body.diabetes_prediction === 1 ? "positive" : "negative";
         out.innerHTML =
-          "<p class='badge " + body.risk_level + "'>" + body.risk_level + " risk</p>" +
+          "<p class='badge " + body.risk_level + "'>" + body.risk_level + "</p>" +
           "<p class='pct'>" + pct + "<span>%</span></p>" +
-          "<p class='placeholder'>Estimated probability of diabetes. Class: <strong>" + label + "</strong>.</p>";
+          "<p class='placeholder'>Estimated probability. Class " + label + ".</p>";
       } catch (err) {
-        out.innerHTML = "<p class='err'>Could not reach the model. Try again.</p>";
+        out.innerHTML = "<p class='err'>Could not reach the model.</p>";
       } finally {
         e.target.querySelector("button").disabled = false;
       }
