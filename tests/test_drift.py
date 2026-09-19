@@ -78,7 +78,20 @@ def test_evaluate_drift_test_split_is_stable():
     _, X_test, _, y_test = make_splits()
     current = X_test.copy()
     current["outcome"] = y_test.to_numpy()
-    report = evaluate_drift(current, reference=X, model=load_model())
+    report = evaluate_drift(
+        current,
+        reference=X,
+        model=load_model(),
+        baseline={
+            "model": "lightgbm",
+            "accuracy": 0.7532,
+            "precision": 0.66,
+            "recall": 0.6111,
+            "f1": 0.6346,
+            "roc_auc": 0.8157,
+            "n_train": 614,
+        },
+    )
     assert report["data"]["data_drift"] is False
     assert report["performance"] is not None
     assert report["performance"]["model_drift"] is False

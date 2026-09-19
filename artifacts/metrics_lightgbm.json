@@ -1,0 +1,10 @@
+{
+  "model": "lightgbm",
+  "accuracy": 0.7532,
+  "precision": 0.66,
+  "recall": 0.6111,
+  "f1": 0.6346,
+  "roc_auc": 0.8157,
+  "n_train": 614,
+  "n_test": 154
+}

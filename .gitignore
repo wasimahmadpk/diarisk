@@ -12,5 +12,6 @@ data/processed/
 artifacts/*
 !artifacts/.gitkeep
 !artifacts/drift_reference.json
+!artifacts/metrics_lightgbm.json
 web/node_modules/
 web/dist/
