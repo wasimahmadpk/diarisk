@@ -44,6 +44,25 @@ def test_predict_rejects_missing_field(sample_patient):
         assert r.status_code == 422
 
 
+def test_stats_uses_cloudwatch(monkeypatch):
+    sample = {
+        "window_hours": 24,
+        "lambda": {"invocations": 10, "errors": 0},
+        "api": {"requests": 10, "status_5xx": 0},
+        "series": {"invocations": []},
+    }
+
+    def fake_collect_stats(hours=24):
+        assert hours == 24
+        return sample
+
+    monkeypatch.setattr("api.collect_stats", fake_collect_stats)
+    with TestClient(app) as client:
+        r = client.get("/stats")
+        assert r.status_code == 200
+        assert r.json()["lambda"]["invocations"] == 10
+
+
 def test_lambda_handler_serves_health():
     """The Lambda entrypoint must handle a Function URL event."""
     from lambda_handler import handler

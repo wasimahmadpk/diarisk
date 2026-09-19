@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from model_io import load_model
 from predict import predict_one
+from stats import collect_stats
 
 _model = None
 
@@ -63,6 +64,15 @@ class PredictionResponse(BaseModel):
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "diarisk", "model_loaded": _model is not None}
+
+
+@app.get("/stats")
+def stats(hours: int = 24):
+    """Operational metrics from CloudWatch (Lambda + HTTP API)."""
+    try:
+        return collect_stats(hours=hours)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Metrics unavailable: {exc}") from exc
 
 
 @app.options("/{full_path:path}")

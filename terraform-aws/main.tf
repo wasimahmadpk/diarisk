@@ -54,6 +54,20 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+data "aws_iam_policy_document" "lambda_metrics" {
+  statement {
+    sid       = "CloudWatchRead"
+    actions   = ["cloudwatch:GetMetricData", "cloudwatch:GetMetricStatistics", "cloudwatch:ListMetrics"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_metrics" {
+  name   = "${var.function_name}-metrics"
+  role   = aws_iam_role.lambda.id
+  policy = data.aws_iam_policy_document.lambda_metrics.json
+}
+
 # Created explicitly so logs expire instead of accumulating forever.
 resource "aws_cloudwatch_log_group" "lambda" {
   name              = "/aws/lambda/${var.function_name}"
@@ -75,7 +89,7 @@ resource "aws_lambda_function" "diarisk" {
 
   environment {
     variables = {
-      DIARISK_MODEL_PATH = "/var/task/models/diarisk_lightgbm.joblib"
+        DIARISK_MODEL_PATH = "/var/task/models/diarisk_lightgbm.joblib"
     }
   }
 

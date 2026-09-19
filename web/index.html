@@ -90,8 +90,26 @@
     .pct span { font-size: 1.2rem; color: var(--muted); }
     .err { color: var(--high); }
     .fine { margin-top: 22px; font-size: 0.78rem; color: var(--muted); line-height: 1.45; }
+    .tabs { display: flex; gap: 8px; margin: 0 0 22px; }
+    .tabs button {
+      width: auto;
+      margin: 0;
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      padding: 8px 14px;
+    }
+    .tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .panel { display: none; }
+    .panel.show { display: block; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .metric { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+    .metric span { display: block; color: var(--muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .metric strong { display: block; font-size: 1.45rem; margin-top: 6px; }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    svg.spark { width: 100%; height: 90px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
     @media (max-width: 720px) {
-      .layout, .grid { grid-template-columns: 1fr; }
+      .layout, .grid, .metrics, .charts { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -99,6 +117,11 @@
   <div class="wrap">
     <h1>DiaRisk</h1>
     <p class="lede">Estimate diabetes risk from eight clinical measurements. This is decision support, not a diagnosis.</p>
+    <div class="tabs">
+      <button type="button" class="active" data-tab="assess">Assess</button>
+      <button type="button" data-tab="monitor">Monitoring</button>
+    </div>
+    <div id="assess" class="panel show">
     <div class="layout">
       <form class="card" id="form">
         <h2>Measurements</h2>
@@ -117,13 +140,91 @@
       <aside class="card result">
         <h2>Result</h2>
         <div id="out"><p class="placeholder">Enter values and assess risk to see the model output.</p></div>
-        <p class="fine">Trained on the Pima Indians Diabetes dataset. Confirm findings with a clinician.</p>
+        <p class="fine">Trained on the Pima Indians Diabetes dataset (women of Pima heritage in that study). Confirm findings with a clinician.</p>
       </aside>
+    </div>
+    </div>
+    <div id="monitor" class="panel">
+      <div class="metrics" id="metric-cards"></div>
+      <div class="charts" id="charts"></div>
+      <p class="fine" id="stats-meta">CloudWatch metrics for the last 24 hours. Refresh after a few minutes for new traffic to appear.</p>
     </div>
   </div>
   <script>
     const API = "https://b2je1touwh.execute-api.eu-north-1.amazonaws.com";
     const out = document.getElementById("out");
+
+    document.querySelectorAll(".tabs button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tabs button").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("show"));
+        document.getElementById(btn.dataset.tab).classList.add("show");
+        if (btn.dataset.tab === "monitor") loadStats();
+      });
+    });
+
+    function spark(points) {
+      if (!points || !points.length) {
+        return "<svg class='spark'></svg>";
+      }
+      const vals = points.map((p) => Number(p.v));
+      const max = Math.max(...vals, 1);
+      const w = 320, h = 90, pad = 8;
+      const step = (w - pad * 2) / Math.max(vals.length - 1, 1);
+      const d = vals.map((v, i) => {
+        const x = pad + i * step;
+        const y = h - pad - (v / max) * (h - pad * 2);
+        return (i ? "L" : "M") + x + " " + y;
+      }).join(" ");
+      return "<svg class='spark' viewBox='0 0 " + w + " " + h + "' preserveAspectRatio='none'><path d='" + d + "' fill='none' stroke='#0e6b58' stroke-width='2'/></svg>";
+    }
+
+    function fmt(v, suffix) {
+      if (v === null || v === undefined) return "—";
+      const n = Number(v);
+      if (Number.isNaN(n)) return "—";
+      return (Number.isInteger(n) ? n : n.toFixed(1)) + (suffix || "");
+    }
+
+    async function loadStats() {
+      const cards = document.getElementById("metric-cards");
+      const charts = document.getElementById("charts");
+      cards.innerHTML = "<p class='placeholder'>Loading CloudWatch metrics…</p>";
+      charts.innerHTML = "";
+      try {
+        const res = await fetch(API + "/stats?hours=24");
+        const s = await res.json();
+        if (!res.ok) throw new Error(s.detail || "stats failed");
+        const L = s.lambda || {};
+        const A = s.api || {};
+        const items = [
+          ["Invocations", fmt(L.invocations)],
+          ["Errors", fmt(L.errors)],
+          ["Error rate", fmt(L.error_rate_pct, "%")],
+          ["Throttles", fmt(L.throttles)],
+          ["Duration avg", fmt(L.duration_avg_ms, " ms")],
+          ["Duration p50", fmt(L.duration_p50_ms, " ms")],
+          ["Duration p95", fmt(L.duration_p95_ms, " ms")],
+          ["Max concurrency", fmt(L.concurrent_max)],
+          ["HTTP requests", fmt(A.requests)],
+          ["HTTP 4xx", fmt(A.status_4xx)],
+          ["HTTP 5xx", fmt(A.status_5xx)],
+          ["API latency", fmt(A.latency_avg_ms, " ms")],
+        ];
+        cards.innerHTML = items.map(([k, v]) => "<div class='metric'><span>" + k + "</span><strong>" + v + "</strong></div>").join("");
+        const series = s.series || {};
+        charts.innerHTML =
+          "<div class='card'><h2>Invocations</h2>" + spark(series.invocations) + "</div>" +
+          "<div class='card'><h2>Duration (avg)</h2>" + spark(series.duration_avg) + "</div>" +
+          "<div class='card'><h2>Errors</h2>" + spark(series.errors) + "</div>" +
+          "<div class='card'><h2>HTTP requests</h2>" + spark(series.api_requests) + "</div>";
+        document.getElementById("stats-meta").textContent =
+          "Last " + s.window_hours + "h in " + s.region + " · " + (s.generated_at || "");
+      } catch (err) {
+        cards.innerHTML = "<p class='err'>Could not load metrics.</p>";
+      }
+    }
     document.getElementById("form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const payload = {};

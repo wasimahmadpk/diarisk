@@ -13,6 +13,7 @@ Region: `eu-north-1`. Interactive docs: [Swagger UI](https://b2je1touwh.execute-
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Service and model status |
+| `/stats` | GET | CloudWatch traffic, latency, errors (last 24h) |
 | `/predict` | POST | Risk score from eight clinical fields |
 | `/docs` | GET | OpenAPI UI |
 
