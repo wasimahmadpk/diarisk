@@ -30,8 +30,22 @@ Z_SIGNIFICANT = 3.0
 MIN_ROWS = 30
 DEFAULT_AUC_DROP = 0.05
 DEFAULT_F1_DROP = 0.05
+def _default_reference_path() -> Path:
+    env = os.environ.get("DIARISK_DRIFT_REFERENCE")
+    if env:
+        return Path(env)
+    here = Path(__file__).resolve().parent
+    for candidate in (
+        here / "artifacts" / "drift_reference.json",  # Lambda: /var/task/artifacts
+        here.parent / "artifacts" / "drift_reference.json",  # local: repo/artifacts
+    ):
+        if candidate.exists():
+            return candidate
+    return here / "artifacts" / "drift_reference.json"
+
+
 BASELINE_METRICS_PATH = ARTIFACTS / "metrics_lightgbm.json"
-REFERENCE_PATH = Path(os.environ.get("DIARISK_DRIFT_REFERENCE", ARTIFACTS / "drift_reference.json"))
+REFERENCE_PATH = _default_reference_path()
 
 
 def _safe_prop(counts: np.ndarray) -> np.ndarray:

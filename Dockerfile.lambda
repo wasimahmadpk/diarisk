@@ -17,5 +17,6 @@ COPY models/ ${LAMBDA_TASK_ROOT}/models/
 COPY artifacts/drift_reference.json ${LAMBDA_TASK_ROOT}/artifacts/drift_reference.json
 
 ENV DIARISK_MODEL_PATH=${LAMBDA_TASK_ROOT}/models/diarisk_lightgbm.joblib
+ENV DIARISK_DRIFT_REFERENCE=${LAMBDA_TASK_ROOT}/artifacts/drift_reference.json
 
 CMD ["lambda_handler.handler"]
