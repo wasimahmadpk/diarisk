@@ -13,6 +13,8 @@ data/
 tests/
 docs/
 terraform-aws/
+web/node_modules/
+web/dist/
 .DS_Store
 .env
 *.md

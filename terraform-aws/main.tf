@@ -108,6 +108,13 @@ resource "aws_apigatewayv2_api" "http" {
   protocol_type = "HTTP"
   description   = "Public HTTP front door for DiaRisk"
   target        = aws_lambda_function.diarisk.arn
+
+  cors_configuration {
+    allow_origins = ["*"]
+    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_headers = ["content-type"]
+    max_age       = 3600
+  }
 }
 
 resource "aws_lambda_permission" "apigw" {

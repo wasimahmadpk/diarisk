@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DiaRisk</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    p.sub { color: #555; margin-top: 0; }
+    label { display: block; margin: 0.6rem 0 0.2rem; font-size: 0.9rem; }
+    input { width: 100%; box-sizing: border-box; padding: 0.4rem 0.5rem; }
+    button { margin-top: 1rem; padding: 0.5rem 1rem; }
+    pre { background: #f4f4f4; padding: 0.75rem; overflow: auto; }
+    .note { font-size: 0.8rem; color: #666; margin-top: 1.5rem; }
+  </style>
+</head>
+<body>
+  <h1>DiaRisk</h1>
+  <p class="sub">Diabetes risk from clinical measurements. Not a diagnosis.</p>
+  <form id="form">
+    <label>Pregnancies <input name="pregnancies" type="number" min="0" step="1" value="2" required /></label>
+    <label>Glucose (mg/dL) <input name="glucose" type="number" min="0" step="1" value="140" required /></label>
+    <label>Blood pressure (diastolic, mmHg) <input name="blood_pressure" type="number" min="0" step="1" value="72" required /></label>
+    <label>Skin thickness (mm) <input name="skin_thickness" type="number" min="0" step="1" value="35" required /></label>
+    <label>Insulin (µU/mL) <input name="insulin" type="number" min="0" step="1" value="110" required /></label>
+    <label>BMI <input name="bmi" type="number" min="0" step="0.1" value="32.5" required /></label>
+    <label>Diabetes pedigree <input name="diabetes_pedigree" type="number" min="0" step="0.01" value="0.55" required /></label>
+    <label>Age <input name="age" type="number" min="0" step="1" value="45" required /></label>
+    <button type="submit">Predict</button>
+  </form>
+  <pre id="out">Submit to call the API.</pre>
+  <p class="note">POST https://b2je1touwh.execute-api.eu-north-1.amazonaws.com/predict</p>
+  <script>
+    const API = "https://b2je1touwh.execute-api.eu-north-1.amazonaws.com";
+    document.getElementById("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const payload = {};
+      for (const el of form.elements) {
+        if (el.name) payload[el.name] = Number(el.value);
+      }
+      const out = document.getElementById("out");
+      out.textContent = "Requesting…";
+      try {
+        const res = await fetch(API + "/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const body = await res.json();
+        out.textContent = JSON.stringify(body, null, 2);
+      } catch (err) {
+        out.textContent = String(err);
+      }
+    });
+  </script>
+</body>
+</html>

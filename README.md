@@ -36,14 +36,14 @@ Example response:
 
 `risk_level` is `low` (< 0.3), `moderate` (< 0.6), or `high`.
 
+## Demo UI
+
+A single static page in `web/` posts to the live API. Host it on Vercel (or open `web/index.html` in a browser).
+
 ## Architecture
 
 ```
-train (sklearn / LightGBM) → joblib artifact
-        ↓
-FastAPI  →  Docker image  →  Amazon ECR
-                                ↓
-                    AWS Lambda  →  API Gateway  →  HTTPS
+train → joblib → FastAPI container → ECR → Lambda → API Gateway
 ```
 
 - Training: logistic regression baseline and LightGBM on the same 80/20 stratified split (`seed=42`)
