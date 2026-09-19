@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from drift import live_report
 from model_io import load_model
-from observations import recent_observations, record_observation
+from observations import live_snapshot, record_observation
 from predict import predict_one
 from stats import collect_stats
 
@@ -83,11 +83,10 @@ def cors_preflight(full_path: str):
 
 
 @app.get("/drift")
-def drift(hours: int = 72):
-    """Live data drift and predicted-score drift from recent /predict calls."""
+def drift():
+    """Live data/score drift vs training mean and std (no database)."""
     try:
-        rows = recent_observations(hours=max(1, min(hours, 72)))
-        return live_report(rows)
+        return live_report(snapshot=live_snapshot())
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Drift unavailable: {exc}") from exc
 

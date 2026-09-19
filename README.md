@@ -14,7 +14,7 @@ Region: `eu-north-1`. Interactive docs: [Swagger UI](https://b2je1touwh.execute-
 |----------|--------|-------------|
 | `/health` | GET | Service and model status |
 | `/stats` | GET | CloudWatch traffic, latency, errors |
-| `/drift` | GET | Live data / score drift from recent `/predict` calls |
+| `/drift` | GET | Live z-score drift vs training mean and std |
 | `/predict` | POST | Risk score from eight clinical fields |
 | `/docs` | GET | OpenAPI UI |
 
@@ -110,7 +110,7 @@ python src/drift.py
 python src/drift.py --current path/to/recent.csv
 ```
 
-`src/drift.py` compares new rows to the training table (PSI per feature) and, if an `outcome` column is present, to the saved LightGBM test metrics. A drop of 0.05 ROC-AUC or F1 is treated as model drift. CloudWatch does not store patient features, so this is an offline batch check.
+`src/drift.py` live checks use training mean and std (z-score). Each `/predict` updates an in-memory running mean; `GET /drift` compares that to the snapshot. There is no DynamoDB. Labeled performance drift still needs an `outcome` column on a CSV (`python src/drift.py --current ...`).
 
 ```
 

@@ -253,26 +253,26 @@
       box.innerHTML = "";
       meta.textContent = "";
       try {
-        const res = await fetch(API + "/drift?hours=72");
+        const res = await fetch(API + "/drift");
         const d = await res.json();
         if (!res.ok) throw new Error("drift failed");
         const data = d.data || {};
         const score = d.score || {};
         const items = [
           ["Live samples", fmt(d.n_current)],
-          ["Data drift", data.data_drift ? "yes" : (d.insufficient_sample ? "need 30+" : "no")],
-          ["Score drift", score.score_drift ? "yes" : (d.insufficient_sample ? "need 30+" : "no")],
-          ["Max PSI", fmt(data.max_psi)],
+          ["Data drift", data.data_drift ? "yes" : (d.insufficient_sample ? "none yet" : "no")],
+          ["Score drift", score.score_drift ? "yes" : (d.insufficient_sample ? "none yet" : "no")],
+          ["Max |z|", fmt(data.max_abs_z)],
           ["Mean score", fmt(score.mean)],
-          ["Baseline mean", fmt(score.baseline_mean)],
+          ["Train score", fmt(score.baseline_mean)],
           ["Positive rate", fmt(score.positive_rate)],
-          ["Baseline pos.", fmt(score.baseline_positive_rate)],
+          ["Train pos.", fmt(score.baseline_positive_rate)],
         ];
         box.innerHTML = items.map(([k, v]) => "<div class='metric'><span>" + k + "</span><strong>" + v + "</strong></div>").join("");
         const drifted = (data.drifted_features || []).join(", ") || "none";
-        meta.textContent = (score.note || "Score drift is not labeled accuracy.") + " Shifted features: " + drifted + ".";
+        meta.textContent = (score.note || "") + " Shifted features: " + drifted + ".";
       } catch (err) {
-        box.innerHTML = "<p class='placeholder'>Live drift needs the updated API (table + /drift).</p>";
+        box.innerHTML = "<p class='placeholder'>Live drift needs the updated API.</p>";
       }
     }
 

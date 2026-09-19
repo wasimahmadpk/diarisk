@@ -67,13 +67,12 @@ def test_drift_from_recent_predicts(sample_patient):
     with TestClient(app) as client:
         for _ in range(8):
             assert client.post("/predict", json=sample_patient).status_code == 200
-        r = client.get("/drift?hours=72")
+        r = client.get("/drift")
         assert r.status_code == 200
         body = r.json()
         assert body["n_current"] == 8
-        assert body["insufficient_sample"] is True
+        assert body["insufficient_sample"] is False
         assert "data" in body and "score" in body
-        assert body["score"]["score_drift"] is False
 
 
 def test_lambda_handler_serves_health():

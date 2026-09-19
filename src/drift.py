@@ -1,9 +1,8 @@
 """
 Data drift and model-performance drift.
 
-Live: each /predict stores features + the model score. GET /drift compares
-those rows to the training snapshot (PSI). Score drift is a proxy from
-outputs only; labeled performance drift still needs an `outcome` column.
+Live checks compare each /predict (and the running mean of this process)
+to training mean ± std. No database: z = (value - train_mean) / train_std.
 
   python src/drift.py
   python src/drift.py --current path/to/recent.csv
@@ -26,6 +25,8 @@ from model_io import load_model
 
 PSI_STABLE = 0.10
 PSI_SIGNIFICANT = 0.25
+Z_MODERATE = 2.0
+Z_SIGNIFICANT = 3.0
 MIN_ROWS = 30
 DEFAULT_AUC_DROP = 0.05
 DEFAULT_F1_DROP = 0.05
@@ -104,6 +105,21 @@ def _edges_from_json(raw: list[float | None]) -> np.ndarray:
         else:
             vals.append(float(e))
     return np.array(vals, dtype=float)
+
+
+def zscore(value: float, mean: float, std: float) -> float:
+    if std is None or float(std) == 0.0:
+        return 0.0
+    return float((value - mean) / std)
+
+
+def z_status(z: float) -> str:
+    a = abs(z)
+    if a < Z_MODERATE:
+        return "stable"
+    if a < Z_SIGNIFICANT:
+        return "moderate"
+    return "significant"
 
 
 def psi_label(psi: float) -> str:
@@ -235,33 +251,23 @@ def load_live_reference(path: Path = REFERENCE_PATH) -> dict[str, Any]:
 
 
 def save_live_reference(path: Path = REFERENCE_PATH) -> Path:
-    """Snapshot training-bin histograms and test-set scores for live PSI."""
-    from data import FEATURE_COLUMNS, load_features_target
-    from evaluate import make_splits
-    from model_io import load_model
-
-    X, _ = load_features_target()
+    """Save training mean and std for live z-score checks."""
     X_train, X_test, _, _ = make_splits()
     scores = load_model().predict_proba(X_test)[:, 1]
     features = {}
     for col in FEATURE_COLUMNS:
         series = X_train[col].to_numpy(dtype=float)
-        edges = _bin_edges(series)
-        clean = series[~np.isnan(series)]
-        counts, _ = np.histogram(clean, bins=edges)
+        series = series[~np.isnan(series)]
         features[col] = {
-            "edges": _edges_to_json(edges),
-            "expected": [int(c) for c in counts],
+            "mean": round(float(np.mean(series)), 4),
+            "std": round(float(np.std(series, ddof=0)), 4),
         }
-    score_edges = _bin_edges(scores)
-    score_counts, _ = np.histogram(scores, bins=score_edges)
     payload = {
         "n_reference": int(len(X_train)),
         "features": features,
         "score": {
-            "edges": _edges_to_json(score_edges),
-            "expected": [int(c) for c in score_counts],
             "mean": round(float(np.mean(scores)), 4),
+            "std": round(float(np.std(scores, ddof=0)), 4),
             "positive_rate": round(float(np.mean(scores >= 0.5)), 4),
         },
     }
@@ -271,63 +277,81 @@ def save_live_reference(path: Path = REFERENCE_PATH) -> Path:
 
 
 def live_report(
-    rows: list[dict[str, Any]],
+    snapshot: dict[str, Any] | None = None,
+    rows: list[dict[str, Any]] | None = None,
     reference: dict[str, Any] | None = None,
-    min_rows: int = MIN_ROWS,
 ) -> dict[str, Any]:
-    """PSI of live /predict inputs and predicted scores vs the training snapshot.
-
-    Predicted-score PSI is a proxy for model change. It is not labeled performance.
-    """
+    """Compare live feature/score means to training mean ± std."""
     reference = reference or load_live_reference()
-    n = len(rows)
-    insufficient = n < min_rows
+    if snapshot is None:
+        snapshot = _snapshot_from_rows(rows or [])
+    n = int(snapshot.get("n") or 0)
+    live_features = snapshot.get("features") or {}
     features_out: dict[str, Any] = {}
     drifted: list[str] = []
-    max_psi = 0.0
+    max_abs_z = 0.0
     for col, spec in (reference.get("features") or {}).items():
-        values = [row.get("features", {}).get(col) for row in rows]
-        values = [v for v in values if v is not None]
-        edges = _edges_from_json(spec["edges"])
-        actual, _ = np.histogram(np.asarray(values, dtype=float), bins=edges) if values else (np.zeros(len(spec["expected"])), None)
-        psi = round(psi_from_counts(spec["expected"], actual), 4)
-        status = psi_label(psi)
-        features_out[col] = {"psi": psi, "status": status}
-        max_psi = max(max_psi, psi)
+        if col not in live_features or "mean" not in spec:
+            continue
+        z = round(zscore(float(live_features[col]), spec["mean"], spec["std"]), 4)
+        status = z_status(z)
+        features_out[col] = {
+            "live_mean": round(float(live_features[col]), 4),
+            "train_mean": spec["mean"],
+            "train_std": spec["std"],
+            "z": z,
+            "status": status,
+        }
+        max_abs_z = max(max_abs_z, abs(z))
         if status == "significant":
             drifted.append(col)
 
-    probs = [float(row["probability"]) for row in rows if row.get("probability") is not None]
-    preds = [int(row["prediction"]) for row in rows if row.get("prediction") is not None]
     score_spec = reference.get("score") or {}
-    score_psi = 0.0
-    if probs and score_spec.get("edges"):
-        edges = _edges_from_json(score_spec["edges"])
-        actual, _ = np.histogram(np.asarray(probs, dtype=float), bins=edges)
-        score_psi = round(psi_from_counts(score_spec["expected"], actual), 4)
-    mean_score = round(float(np.mean(probs)), 4) if probs else None
-    positive_rate = round(float(np.mean(preds)), 4) if preds else None
-    score_status = psi_label(score_psi)
+    live_score = snapshot.get("score_mean")
+    score_z = 0.0
+    if live_score is not None and score_spec.get("std"):
+        score_z = round(zscore(float(live_score), score_spec["mean"], score_spec["std"]), 4)
+    score_status = z_status(score_z) if live_score is not None else "stable"
     return {
         "n_current": n,
-        "insufficient_sample": insufficient,
+        "insufficient_sample": n == 0,
         "data": {
             "n_reference": reference.get("n_reference"),
             "features": features_out,
-            "max_psi": round(max_psi, 4),
+            "max_abs_z": round(max_abs_z, 4),
             "drifted_features": drifted,
-            "data_drift": bool(drifted) and not insufficient,
+            "data_drift": bool(drifted) and n > 0,
         },
         "score": {
-            "psi": score_psi,
+            "z": score_z,
             "status": score_status,
-            "mean": mean_score,
+            "mean": None if live_score is None else round(float(live_score), 4),
             "baseline_mean": score_spec.get("mean"),
-            "positive_rate": positive_rate,
+            "positive_rate": snapshot.get("positive_rate"),
             "baseline_positive_rate": score_spec.get("positive_rate"),
-            "score_drift": (score_status == "significant") and not insufficient,
-            "note": "Score drift compares model outputs to the test-set score mix. It is not accuracy; that needs labeled outcomes.",
+            "score_drift": (score_status == "significant") and n > 0,
+            "note": "z = (live mean − train mean) / train std. |z|≥3 is flagged. Score drift is not labeled accuracy.",
         },
+    }
+
+
+def _snapshot_from_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    n = len(rows)
+    if n == 0:
+        return {"n": 0, "features": {}, "score_mean": None, "positive_rate": None}
+    features = {}
+    for col in FEATURE_COLUMNS:
+        vals = [row.get("features", {}).get(col) for row in rows]
+        vals = [float(v) for v in vals if v is not None]
+        if vals:
+            features[col] = sum(vals) / len(vals)
+    probs = [float(row["probability"]) for row in rows if row.get("probability") is not None]
+    preds = [int(row["prediction"]) for row in rows if row.get("prediction") is not None]
+    return {
+        "n": n,
+        "features": features,
+        "score_mean": (sum(probs) / len(probs)) if probs else None,
+        "positive_rate": (sum(preds) / len(preds)) if preds else None,
     }
 
 

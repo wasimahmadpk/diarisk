@@ -54,42 +54,11 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-resource "aws_dynamodb_table" "observations" {
-  name         = "${var.function_name}-observations"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "pk"
-  range_key    = "sk"
-
-  attribute {
-    name = "pk"
-    type = "S"
-  }
-
-  attribute {
-    name = "sk"
-    type = "S"
-  }
-
-  ttl {
-    attribute_name = "expires_at"
-    enabled        = true
-  }
-}
-
 data "aws_iam_policy_document" "lambda_metrics" {
   statement {
     sid       = "CloudWatchRead"
     actions   = ["cloudwatch:GetMetricData", "cloudwatch:GetMetricStatistics", "cloudwatch:ListMetrics"]
     resources = ["*"]
-  }
-
-  statement {
-    sid = "DriftTable"
-    actions = [
-      "dynamodb:PutItem",
-      "dynamodb:Query",
-    ]
-    resources = [aws_dynamodb_table.observations.arn]
   }
 }
 
@@ -120,9 +89,7 @@ resource "aws_lambda_function" "diarisk" {
 
   environment {
     variables = {
-      DIARISK_MODEL_PATH    = "/var/task/models/diarisk_lightgbm.joblib"
-      DIARISK_DRIFT_TABLE   = aws_dynamodb_table.observations.name
-      DIARISK_DRIFT_BACKEND = "dynamo"
+      DIARISK_MODEL_PATH = "/var/task/models/diarisk_lightgbm.joblib"
     }
   }
 

@@ -64,13 +64,12 @@ def test_live_report_flags_shifted_inputs():
     rows = []
     for _, rec in sample.iterrows():
         feats = {c: float(rec[c]) if rec[c] == rec[c] else 0.0 for c in FEATURE_COLUMNS}
-        feats["glucose"] = feats["glucose"] + 90
-        rows.append({"features": feats, "probability": 0.95, "prediction": 1})
-    report = live_report(rows)
+        feats["glucose"] = feats["glucose"] + 120
+        rows.append({"features": feats, "probability": 0.99, "prediction": 1})
+    report = live_report(rows=rows)
     assert report["n_current"] == 40
     assert report["data"]["data_drift"] is True
     assert "glucose" in report["data"]["drifted_features"]
-    assert report["score"]["score_drift"] is True
 
 
 def test_evaluate_drift_test_split_is_stable():

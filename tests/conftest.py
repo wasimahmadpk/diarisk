@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 os.environ.setdefault("DIARISK_DRIFT_BACKEND", "memory")
-os.environ.pop("DIARISK_DRIFT_TABLE", None)
 
 
 @pytest.fixture(autouse=True)
