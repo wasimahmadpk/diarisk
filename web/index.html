@@ -147,7 +147,7 @@
     <div id="monitor" class="panel">
       <div class="metrics" id="metric-cards"></div>
       <div class="charts" id="charts"></div>
-      <p class="fine" id="stats-meta">CloudWatch metrics for the last 24 hours. Refresh after a few minutes for new traffic to appear.</p>
+      <p class="fine" id="stats-meta">CloudWatch totals for the last 72 hours. New calls can take a few minutes to appear.</p>
     </div>
   </div>
   <script>
@@ -193,7 +193,7 @@
       cards.innerHTML = "<p class='placeholder'>Loading CloudWatch metrics…</p>";
       charts.innerHTML = "";
       try {
-        const res = await fetch(API + "/stats?hours=24");
+        const res = await fetch(API + "/stats?hours=72");
         const s = await res.json();
         if (!res.ok) throw new Error(s.detail || "stats failed");
         const L = s.lambda || {};
