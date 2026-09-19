@@ -38,7 +38,7 @@ Example response:
 
 ## Demo UI
 
-A single static page in `web/` posts to the live API. Host it on Vercel (or open `web/index.html` in a browser).
+A single static page in `web/` posts to the live API. On Vercel, set **Root Directory** to `web` and leave install/build empty. Do not install `requirements.txt` — that is only for the AWS API.
 
 ## Architecture
 
