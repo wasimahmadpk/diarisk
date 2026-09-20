@@ -9,11 +9,11 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #f7f8f6;
+      --bg: #f4f6f4;
       --panel: #ffffff;
-      --ink: #1a2420;
+      --ink: #15221d;
       --muted: #66736d;
-      --line: #e4eae6;
+      --line: #e2e8e4;
       --accent: #0f7a64;
       --low: #157a48;
       --mod: #a05c0c;
@@ -25,161 +25,197 @@
       min-height: 100vh;
       color: var(--ink);
       font-family: "IBM Plex Sans", system-ui, sans-serif;
-      background: var(--bg);
+      background:
+        radial-gradient(900px 280px at 10% -10%, #e7f3ee, transparent 55%),
+        var(--bg);
     }
-    .wrap { max-width: 840px; margin: 0 auto; padding: 40px 20px 80px; }
-    header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 36px; }
-    h1 {
-      font-family: "IBM Plex Serif", Georgia, serif;
-      font-size: 1.65rem;
-      font-weight: 500;
-      letter-spacing: -0.03em;
-      margin: 0;
-    }
-    .lede { margin: 6px 0 0; color: var(--muted); font-size: 0.92rem; }
-    .tabs {
+    .wrap { max-width: 920px; margin: 0 auto; padding: 28px 20px 72px; }
+    header {
       display: flex;
-      padding: 4px;
-      background: #eef1ef;
-      border: 1px solid var(--line);
-      border-radius: 999px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .mark {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--accent); color: #fff;
+      display: grid; place-items: center;
+      font-family: "IBM Plex Serif", Georgia, serif;
+      font-size: 1.15rem;
+    }
+    h1 { font-family: "IBM Plex Serif", Georgia, serif; font-size: 1.45rem; font-weight: 500; letter-spacing: -0.03em; margin: 0; }
+    .lede { margin: 2px 0 0; color: var(--muted); font-size: 0.85rem; }
+    .head-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .status {
+      font-size: 0.75rem; color: var(--muted);
+      background: #fff; border: 1px solid var(--line);
+      border-radius: 999px; padding: 6px 10px;
+    }
+    .status i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: #c5cec9; }
+    .status.ok i { background: var(--low); }
+    .status.bad i { background: var(--high); }
+    .tabs {
+      display: flex; padding: 4px; background: #eef1ef;
+      border: 1px solid var(--line); border-radius: 999px;
     }
     .tabs button {
-      border: 0;
-      background: transparent;
-      color: var(--muted);
-      font: inherit;
-      font-size: 0.85rem;
-      font-weight: 500;
-      padding: 7px 14px;
-      border-radius: 999px;
-      cursor: pointer;
+      border: 0; background: transparent; color: var(--muted);
+      font: inherit; font-size: 0.85rem; font-weight: 500;
+      padding: 7px 14px; border-radius: 999px; cursor: pointer;
     }
     .tabs button.active { background: var(--accent); color: #fff; }
     .panel { display: none; }
     .panel.show { display: block; }
-    .layout { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 16px; }
+    .layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 16px; }
     .card {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 22px;
-      box-shadow: 0 8px 24px rgba(26, 36, 32, 0.04);
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 18px; padding: 22px;
+      box-shadow: 0 10px 28px rgba(21, 34, 29, 0.04);
     }
-    h2 { margin: 0 0 16px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    h2 { margin: 0 0 4px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .sub { margin: 0 0 16px; color: var(--muted); font-size: 0.8rem; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    label { display: flex; flex-direction: column; gap: 6px; font-size: 0.78rem; color: var(--muted); }
+    label { display: flex; flex-direction: column; gap: 5px; font-size: 0.78rem; color: var(--muted); font-weight: 500; }
+    label em { font-style: normal; font-weight: 400; color: #8a968f; }
     input {
-      font: inherit;
-      color: var(--ink);
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 10px 12px;
+      font: inherit; color: var(--ink); background: #fbfcfb;
+      border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
     }
-    input:focus { outline: none; border-color: var(--accent); }
+    input:focus { outline: none; border-color: var(--accent); background: #fff; }
     .go {
-      margin-top: 16px;
-      width: 100%;
-      border: 0;
-      border-radius: 12px;
-      padding: 12px;
-      background: var(--accent);
-      color: #fff;
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
+      margin-top: 16px; width: 100%; border: 0; border-radius: 12px;
+      padding: 13px; background: var(--accent); color: #fff;
+      font: inherit; font-weight: 600; cursor: pointer;
     }
     .go:disabled { opacity: 0.55; cursor: wait; }
-    .result { min-height: 280px; display: flex; flex-direction: column; }
+    .result { min-height: 320px; display: flex; flex-direction: column; }
     .placeholder { color: var(--muted); line-height: 1.55; margin: 0; }
     .badge {
-      display: inline-block;
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 4px 10px;
-      border-radius: 999px;
+      display: inline-block; font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 999px;
     }
     .low { background: #e6f6ee; color: var(--low); }
     .moderate { background: #f8edd9; color: var(--mod); }
     .high { background: #fde8e6; color: var(--high); }
     .pct {
       font-family: "IBM Plex Serif", Georgia, serif;
-      font-size: 4.2rem;
-      font-weight: 500;
-      letter-spacing: -0.04em;
-      line-height: 1;
-      margin: 18px 0 10px;
+      font-size: 3.8rem; font-weight: 500; letter-spacing: -0.04em;
+      line-height: 1; margin: 16px 0 12px;
     }
-    .pct span { font-size: 1.15rem; color: var(--muted); }
+    .pct span { font-size: 1.1rem; color: var(--muted); }
+    .meter { height: 8px; background: #eef1ef; border-radius: 99px; overflow: hidden; margin: 8px 0 14px; }
+    .meter b { display: block; height: 100%; border-radius: 99px; width: 0; transition: width 0.4s ease; }
+    .meter b.low { background: var(--low); }
+    .meter b.moderate { background: var(--mod); }
+    .meter b.high { background: var(--high); }
+    .ticks { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--muted); margin-bottom: 14px; }
+    .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .facts div { background: #f7f9f8; border-radius: 10px; padding: 10px 12px; }
+    .facts span { display: block; font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .facts strong { font-weight: 600; }
     .err { color: var(--high); }
     .fine { margin: auto 0 0; padding-top: 18px; font-size: 0.75rem; color: var(--muted); line-height: 1.45; }
+    .section { margin: 22px 0 10px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
     .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
     .metric { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
     .metric span { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
-    .metric strong { display: block; margin-top: 8px; font-size: 1.35rem; font-weight: 500; }
+    .metric strong { display: block; margin-top: 8px; font-size: 1.3rem; font-weight: 500; }
     .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     svg.spark { width: 100%; height: 88px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chips b { font-weight: 500; font-size: 0.75rem; background: #fde8e6; color: var(--high); padding: 3px 8px; border-radius: 999px; }
+    footer { margin-top: 36px; font-size: 0.75rem; color: var(--muted); }
     @media (max-width: 720px) {
-      header { flex-direction: column; }
-      .layout, .grid, .metrics, .charts { grid-template-columns: 1fr 1fr; }
+      header, .head-right { flex-direction: column; align-items: flex-start; }
+      .layout, .grid, .metrics, .charts, .facts { grid-template-columns: 1fr 1fr; }
       .layout { grid-template-columns: 1fr; }
     }
     @media (max-width: 480px) {
-      .grid, .metrics, .charts { grid-template-columns: 1fr; }
+      .grid, .metrics, .charts, .facts { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <div>
-        <h1>DiaRisk</h1>
-        <p class="lede">Eight measurements. One risk estimate. Not a diagnosis.</p>
+      <div class="brand">
+        <div class="mark" aria-hidden="true">D</div>
+        <div>
+          <h1>DiaRisk</h1>
+          <p class="lede">Clinical risk estimate · not a diagnosis</p>
+        </div>
       </div>
-      <nav class="tabs">
-        <button type="button" class="active" data-tab="assess">Assess</button>
-        <button type="button" data-tab="monitor">Monitor</button>
-      </nav>
+      <div class="head-right">
+        <div class="status" id="api-status"><i></i>API</div>
+        <nav class="tabs">
+          <button type="button" class="active" data-tab="assess">Assess</button>
+          <button type="button" data-tab="monitor">Monitor</button>
+        </nav>
+      </div>
     </header>
 
     <div id="assess" class="panel show">
       <div class="layout">
         <form class="card" id="form">
-          <h2>Inputs</h2>
+          <h2>Patient inputs</h2>
+          <p class="sub">Eight Pima-style measurements. Zeros in lab fields are treated as missing by the model.</p>
           <div class="grid">
             <label>Pregnancies <input name="pregnancies" type="number" min="0" step="1" value="2" required /></label>
-            <label>Glucose (mg/dL) <input name="glucose" type="number" min="0" step="1" value="140" required /></label>
-            <label>Blood pressure <input name="blood_pressure" type="number" min="0" step="1" value="72" required /></label>
-            <label>Skin thickness <input name="skin_thickness" type="number" min="0" step="1" value="35" required /></label>
-            <label>Insulin (µU/mL) <input name="insulin" type="number" min="0" step="1" value="110" required /></label>
+            <label>Glucose <em>mg/dL</em> <input name="glucose" type="number" min="0" step="1" value="140" required /></label>
+            <label>Blood pressure <em>mmHg</em> <input name="blood_pressure" type="number" min="0" step="1" value="72" required /></label>
+            <label>Skin thickness <em>mm</em> <input name="skin_thickness" type="number" min="0" step="1" value="35" required /></label>
+            <label>Insulin <em>µU/mL</em> <input name="insulin" type="number" min="0" step="1" value="110" required /></label>
             <label>BMI <input name="bmi" type="number" min="0" step="0.1" value="32.5" required /></label>
-            <label>Pedigree <input name="diabetes_pedigree" type="number" min="0" step="0.01" value="0.55" required /></label>
-            <label>Age <input name="age" type="number" min="0" step="1" value="45" required /></label>
+            <label>Pedigree function <input name="diabetes_pedigree" type="number" min="0" step="0.01" value="0.55" required /></label>
+            <label>Age <em>years</em> <input name="age" type="number" min="0" step="1" value="45" required /></label>
           </div>
           <button class="go" type="submit">Assess risk</button>
         </form>
         <aside class="card result">
-          <h2>Estimate</h2>
-          <div id="out"><p class="placeholder">Fill the form, then assess.</p></div>
-          <p class="fine">Model trained on the Pima Indians Diabetes cohort. Confirm with a clinician.</p>
+          <h2>Model output</h2>
+          <p class="sub">LightGBM probability of diabetes (class 1).</p>
+          <div id="out">
+            <p class="placeholder">Enter values and assess to see risk, class, and a probability bar.</p>
+          </div>
+          <p class="fine">Trained on the Pima Indians Diabetes cohort (women in that study). Confirm findings with a clinician.</p>
         </aside>
       </div>
     </div>
 
     <div id="monitor" class="panel">
+      <p class="section">Operations · CloudWatch 72h</p>
       <div class="metrics" id="metric-cards"></div>
       <div class="charts" id="charts"></div>
-      <div class="metrics" id="drift-cards" style="margin-top:12px"></div>
-      <p class="fine" id="stats-meta" style="margin-top:16px">CloudWatch totals for the last 72 hours.</p>
+      <p class="fine" id="stats-meta">CloudWatch totals for the last 72 hours.</p>
+      <p class="section">Data &amp; score drift · live means vs training</p>
+      <div class="metrics" id="drift-cards"></div>
+      <div id="drift-chips" class="chips"></div>
       <p class="fine" id="drift-meta"></p>
     </div>
+    <footer>DiaRisk · FastAPI on AWS Lambda · static UI</footer>
   </div>
   <script>
     const API = "https://b2je1touwh.execute-api.eu-north-1.amazonaws.com";
     const out = document.getElementById("out");
+
+    async function ping() {
+      const el = document.getElementById("api-status");
+      try {
+        const res = await fetch(API + "/health");
+        const b = await res.json();
+        if (res.ok && b.status === "ok") {
+          el.className = "status ok";
+          el.innerHTML = "<i></i>API live · eu-north-1";
+        } else throw new Error();
+      } catch (e) {
+        el.className = "status bad";
+        el.innerHTML = "<i></i>API unreachable";
+      }
+    }
+    ping();
 
     document.querySelectorAll(".tabs button").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -217,7 +253,7 @@
     async function loadStats() {
       const cards = document.getElementById("metric-cards");
       const charts = document.getElementById("charts");
-      cards.innerHTML = "<p class='placeholder'>Loading…</p>";
+      cards.innerHTML = "<p class='placeholder'>Loading operations…</p>";
       charts.innerHTML = "";
       try {
         const res = await fetch(API + "/stats?hours=72");
@@ -230,9 +266,9 @@
           ["Invocations", fmt(L.invocations)],
           ["Errors", fmt(L.errors)],
           ["Latency", fmt(A.latency_avg_ms, " ms")],
-          ["4xx", fmt(A.status_4xx)],
-          ["5xx", fmt(A.status_5xx)],
-          ["p95", fmt(L.duration_p95_ms, " ms")],
+          ["HTTP 4xx", fmt(A.status_4xx)],
+          ["HTTP 5xx", fmt(A.status_5xx)],
+          ["Duration p95", fmt(L.duration_p95_ms, " ms")],
           ["Throttles", fmt(L.throttles)],
         ];
         cards.innerHTML = items.map(([k, v]) => "<div class='metric'><span>" + k + "</span><strong>" + v + "</strong></div>").join("");
@@ -241,7 +277,7 @@
           "<div class='card'><h2>Invocations</h2>" + spark(series.invocations) + "</div>" +
           "<div class='card'><h2>HTTP requests</h2>" + spark(series.api_requests) + "</div>";
         document.getElementById("stats-meta").textContent =
-          "Last " + s.window_hours + "h · " + (s.region || "") + " · " + (s.generated_at || "");
+          "Last " + s.window_hours + "h · " + (s.region || "") + " · " + (s.generated_at || "").replace("T", " ").slice(0, 19);
       } catch (err) {
         cards.innerHTML = "<p class='err'>Could not load metrics.</p>";
       }
@@ -250,8 +286,10 @@
     async function loadDrift() {
       const box = document.getElementById("drift-cards");
       const meta = document.getElementById("drift-meta");
+      const chips = document.getElementById("drift-chips");
       box.innerHTML = "";
       meta.textContent = "";
+      chips.innerHTML = "";
       try {
         const res = await fetch(API + "/drift");
         const d = await res.json();
@@ -269,8 +307,11 @@
           ["Train pos.", fmt(score.baseline_positive_rate)],
         ];
         box.innerHTML = items.map(([k, v]) => "<div class='metric'><span>" + k + "</span><strong>" + v + "</strong></div>").join("");
-        const drifted = (data.drifted_features || []).join(", ") || "none";
-        meta.textContent = (score.note || "") + " Shifted features: " + drifted + ".";
+        const drifted = data.drifted_features || [];
+        chips.innerHTML = drifted.length
+          ? drifted.map((f) => "<b>" + f + "</b>").join("")
+          : "";
+        meta.textContent = score.note || "";
       } catch (err) {
         box.innerHTML = "<p class='placeholder'>Live drift needs the updated API.</p>";
       }
@@ -297,10 +338,14 @@
         }
         const pct = Math.round(body.diabetes_probability * 100);
         const label = body.diabetes_prediction === 1 ? "positive" : "negative";
+        const level = body.risk_level;
         out.innerHTML =
-          "<p class='badge " + body.risk_level + "'>" + body.risk_level + "</p>" +
+          "<p class='badge " + level + "'>" + level + " risk</p>" +
           "<p class='pct'>" + pct + "<span>%</span></p>" +
-          "<p class='placeholder'>Estimated probability. Class " + label + ".</p>";
+          "<div class='meter'><b class='" + level + "' style='width:" + pct + "%'></b></div>" +
+          "<div class='ticks'><span>0</span><span>low 30</span><span>mod 60</span><span>100</span></div>" +
+          "<div class='facts'><div><span>Class</span><strong>" + label + "</strong></div>" +
+          "<div><span>Probability</span><strong>" + body.diabetes_probability.toFixed(4) + "</strong></div></div>";
       } catch (err) {
         out.innerHTML = "<p class='err'>Could not reach the model.</p>";
       } finally {
