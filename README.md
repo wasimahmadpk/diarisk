@@ -4,7 +4,7 @@ Predict diabetes risk from standard clinical measurements (glucose, BMI, blood p
 
 Data: [Pima Indians Diabetes](https://archive.ics.uci.edu/dataset/34/diabetes) (UCI), 768 samples.
 
-This is a decision-support model, not a medical diagnosis.
+This is a decision-support model, and not a medical diagnosis.
 
 ## Live API
 
